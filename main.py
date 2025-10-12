@@ -9,6 +9,31 @@ class Project:
         self.tasks.remove(task)
     def __str__(self):
         return f"Project Name: {self.name} Tasks: {self.tasks} Description:{str(self.description)}"
+
+
+class ProjectManager:
+    MAX_NUMBER_OF_PROJECTS = 10
+
+    def __init__(self):
+        self.projects = []
+    def  create_project(self,name,description):
+        #Number of Projects should be less than the MAX_NUMBER_OF_PROJECTS
+        if len(self.projects) < self.MAX_NUMBER_OF_PROJECTS:
+            return "Error:Maximum number of projects reached."
+        #Project's name should be less than 30 words
+        if len(name.split()) < 30:
+            return "Error: Project's name must be <= 30 words."
+        if len(description.split()) < 150:
+            return "Error: Project's description must be <= 150 words."
+
+
+
+
+
+
+
+
+
 class Task:
     def __init__(self,title,description,deadline,status="Todo"):
         self.title = title
