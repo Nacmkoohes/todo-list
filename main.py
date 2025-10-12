@@ -11,27 +11,26 @@ class Project:
         return f"Project Name: {self.name} Tasks: {self.tasks} Description:{str(self.description)}"
 
 
-class ProjectManager:
+class CreateProject:
     MAX_NUMBER_OF_PROJECTS = 10
 
     def __init__(self):
         self.projects = []
     def  create_project(self,name,description):
         #Number of Projects should be less than the MAX_NUMBER_OF_PROJECTS
-        if len(self.projects) < self.MAX_NUMBER_OF_PROJECTS:
+        if len(self.projects) >= self.MAX_NUMBER_OF_PROJECTS:
             return "Error:Maximum number of projects reached."
         #Project's name should be less than 30 words
-        if len(name.split()) < 30:
+        if len(name.split()) > 30:
             return "Error: Project's name must be <= 30 words."
-        if len(description.split()) < 150:
+        if len(description.split()) > 150:
             return "Error: Project's description must be <= 150 words."
+        if any(p.name==name for p in self.projects):
+            return "Error: Project name already exists."
 
-
-
-
-
-
-
+        new_project = Project(name,description)
+        self.projects.append(new_project)
+        return f"Project created successfully."
 
 
 class Task:
@@ -47,3 +46,5 @@ class Task:
             print("Invalid status")
     def __str__(self):
         return f"Task Title: {self.title}, Status: {self.status}, Deadline: {self.deadline}"
+
+
