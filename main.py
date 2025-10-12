@@ -11,7 +11,7 @@ class Project:
         return f"Project Name: {self.name} Tasks: {self.tasks} Description:{str(self.description)}"
 
 
-class CreateProject:
+class ManageProject:
     MAX_NUMBER_OF_PROJECTS = 10
 
     def __init__(self):
@@ -31,6 +31,23 @@ class CreateProject:
         new_project = Project(name,description)
         self.projects.append(new_project)
         return f"Project created successfully."
+    def edit_project(self,old_name,new_name,new_description):
+        project=next((p for p in self.projects if p.name == old_name), None)
+        if not project:
+            return "Error: Project does not exist."
+        if len(new_name.split()) > 30:
+            return "Error: Project's name must be <= 30 words."
+        if len(new_description.split()) > 150:
+            return "Error: Project's description must be <= 150 words."
+
+        if any(p.name==new_name and p!=project for p in self.projects):
+            return "Error: Project name already exists."
+
+        project.name = new_name
+        project.description = new_description
+        return f" Project '{old_name}' updated successfully to '{new_name}'"
+
+
 
 
 class Task:
@@ -46,5 +63,4 @@ class Task:
             print("Invalid status")
     def __str__(self):
         return f"Task Title: {self.title}, Status: {self.status}, Deadline: {self.deadline}"
-
 
