@@ -20,6 +20,13 @@ class Project:
 
         self.tasks.append(task)
         return f"Task '{task.title}' added successfully to project '{self.name}'"
+    def delete_task(self,task_title):
+        task = next((t for t in self.tasks if t.title == task_title), None)
+        if not task:
+            return f"Error: Task '{task_title}' not found in project '{self.name}'"
+        self.tasks.remove(task)
+        return f"Task '{task_title}' deleted successfully from project '{self.name}'"
+
 
 
 
@@ -74,6 +81,7 @@ class ManageProject:
         #Cascade Delete
         project.tasks.clear()
         return f"Project '{name}' and all it's tasks have been deleted successfully."
+
 
 
 class Task:
