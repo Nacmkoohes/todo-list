@@ -47,6 +47,17 @@ class ManageProject:
         project.description = new_description
         return f" Project '{old_name}' updated successfully to '{new_name}'"
 
+    def delete_project(self, name):
+        project = next((p for p in self.projects if p.name == name), None)
+        if not project:
+            return "Error: Project not found."
+
+        self.projects.remove(project)
+        #Cascade Delete
+        project.tasks.clear()
+        return f"Project '{name}' and all it's tasks have been deleted successfully."
+
+
 
 
 
