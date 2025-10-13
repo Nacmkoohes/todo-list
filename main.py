@@ -27,11 +27,6 @@ class Project:
         self.tasks.remove(task)
         return f"Task '{task_title}' deleted successfully from project '{self.name}'"
 
-
-
-
-    def remove_task(self,task):
-        self.tasks.remove(task)
     def __str__(self):
         return f"Project Name: {self.name} Tasks: {self.tasks} Description:{str(self.description)}"
 
@@ -93,8 +88,9 @@ class Task:
     def change_status(self, new_status):
         if new_status in ["Todo","Doing","Done"]:
             self.status = new_status
+            return f"Task '{self.title}'status changed to '{new_status}'"
         else:
-            print("Invalid status")
+           return "Error:Invalid status"
     def __str__(self):
         return f"Task Title: {self.title}, Status: {self.status}, Deadline: {self.deadline}"
 
