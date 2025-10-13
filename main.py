@@ -26,12 +26,6 @@ class Project:
             return f"Error: Task '{task_title}' not found in project '{self.name}'"
         self.tasks.remove(task)
         return f"Task '{task_title}' deleted successfully from project '{self.name}'"
-
-
-
-
-    def remove_task(self,task):
-        self.tasks.remove(task)
     def __str__(self):
         return f"Project Name: {self.name} Tasks: {self.tasks} Description:{str(self.description)}"
 
