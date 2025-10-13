@@ -90,6 +90,7 @@ class Task:
             self.status = new_status
             return f"Task '{self.title}'status changed to '{new_status}'"
         else:
+
             return "Error:Invalid status"
 
     def edit_task(self,new_title=None,new_description=None,new_deadline=None,new_status=None):
