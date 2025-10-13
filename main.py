@@ -90,7 +90,7 @@ class Task:
             self.status = new_status
             return f"Task '{self.title}'status changed to '{new_status}'"
         else:
-            return ("Error:Invalid status")
+            return "Error:Invalid status"
     def __str__(self):
         return f"Task Title: {self.title}, Status: {self.status}, Deadline: {self.deadline}"
 
