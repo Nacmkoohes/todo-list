@@ -78,8 +78,8 @@ class ManageProject:
         return f"Project '{name}' and all it's tasks have been deleted successfully."
 
 
-
 class Task:
+
     def __init__(self,title,description,deadline,status="Todo"):
         self.title = title
         self.description = description
@@ -93,7 +93,24 @@ class Task:
 
             return "Error:Invalid status"
 
+    def edit_task(self,new_title=None,new_description=None,new_deadline=None,new_status=None):
+        if new_title:
+            if len(new_title.split()) > 30:
+                return "Error: Task title must be <= 30 words."
+            self.title = new_title
+        if new_description:
+                if len(new_description.split()) > 150:
+                    return "Error: Task description must be <= 150 words."
+                self.description = new_description
+        if new_deadline:
+                self.deadline = new_deadline
+        if new_status:
+            if new_status not in ["Todo", "Doing", "Done"]:
+                return "Error: Task status is invalid."
+            self.status = new_status
+        return f"Task '{self.title}' updated successfully "
+
+
     def __str__(self):
         return f"Task Title: {self.title}, Status: {self.status}, Deadline: {self.deadline}"
-
 
