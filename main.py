@@ -1,10 +1,28 @@
+MAX_NUMBER_OF_TASKS = 10
+
+
 class Project:
+    MAX_NUMBER_OF_TASKS = 10
     def __init__(self,name,description):
         self.name = name
         self.description = description
         self.tasks = []
     def add_task(self,task):
+        if len(self.tasks)>= self.MAX_NUMBER_OF_TASKS:
+            return "Error: Maximum number of tasks reached."
+        if len(task.title.split())>30:
+            return "Error: Task name is too long."
+        if len(task.description.split())>150:
+            return "Error: Task description is too long."
+
+        if task.status not in ["Todo","Doing","Done"]:
+            return "Error: Task status is invalid."
+
         self.tasks.append(task)
+        return f"Task '{task.title}' added successfully to project '{self.name}'"
+
+
+
     def remove_task(self,task):
         self.tasks.remove(task)
     def __str__(self):
@@ -16,7 +34,7 @@ class ManageProject:
 
     def __init__(self):
         self.projects = []
-    def  create_project(self,name,description):
+    def create_project(self,name,description):
         #Number of Projects should be less than the MAX_NUMBER_OF_PROJECTS
         if len(self.projects) >= self.MAX_NUMBER_OF_PROJECTS:
             return "Error:Maximum number of projects reached."
@@ -47,7 +65,15 @@ class ManageProject:
         project.description = new_description
         return f" Project '{old_name}' updated successfully to '{new_name}'"
 
+    def delete_project(self, name):
+        project = next((p for p in self.projects if p.name == name), None)
+        if not project:
+            return "Error: Project not found."
 
+        self.projects.remove(project)
+        #Cascade Delete
+        project.tasks.clear()
+        return f"Project '{name}' and all it's tasks have been deleted successfully."
 
 
 class Task:
@@ -63,4 +89,5 @@ class Task:
             print("Invalid status")
     def __str__(self):
         return f"Task Title: {self.title}, Status: {self.status}, Deadline: {self.deadline}"
+
 
