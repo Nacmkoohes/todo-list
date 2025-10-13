@@ -85,8 +85,9 @@ class Task:
     def change_status(self, new_status):
         if new_status in ["Todo","Doing","Done"]:
             self.status = new_status
+            return f"Task '{self.title}' status changed to '{new_status}'"
         else:
-            print("Invalid status")
+            return "Error:Invalid status"
     def __str__(self):
         return f"Task Title: {self.title}, Status: {self.status}, Deadline: {self.deadline}"
 
