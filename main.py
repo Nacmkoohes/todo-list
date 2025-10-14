@@ -21,10 +21,13 @@ class Project:
         self.tasks.append(task)
         return f"Task '{task.title}' added successfully to project '{self.name}'"
 
+    def remove_task(self, task_title):
+        task = next((t for t in self.tasks if t.title == task_title), None)
+        if not task:
+            return f"Error: Task '{task_title}' not found in project '{self.name}'"
 
-    def remove_task(self,task):
         self.tasks.remove(task)
-        return f"Task '{task_title}' deleted successfully from project '{self.name}'"
+        return f"Task '{task_title}' removed successfully from project '{self.name}'"
 
     def __str__(self):
         tasks_str = ",".join([f"{t.title} ({t.status}, {t.deadline})" for t in self.tasks])
@@ -94,7 +97,7 @@ class Task:
     def change_status(self, new_status):
         if new_status in ["Todo","Doing","Done"]:
             self.status = new_status
-            return f"Task '{self.title}'status changed to '{new_status}'"
+            return f"Task '{self.title}' status changed to '{new_status}'"
         else:
 
             return "Error:Invalid status"
@@ -119,3 +122,13 @@ class Task:
 
     def __str__(self):
         return f"Task Title: {self.title}, Status: {self.status}, Deadline: {self.deadline}"
+pm = ManageProject()
+pm.create_project("Learn Python", "Python basics")
+project = pm.projects[0]
+
+task1 = Task("Study OOP", "Learn OOP", "2025-10-20")
+project.add_task(task1)
+
+# حذف تسک
+print(project.remove_task("Study OOP"))  # ✅ Task حذف می‌شود
+print(project.tasks)  # ❌ لیست تسک‌ها خالی است
