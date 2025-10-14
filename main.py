@@ -28,6 +28,12 @@ class Project:
 
         self.tasks.remove(task)
         return f"Task '{task_title}' removed successfully from project '{self.name}'"
+    def list_tasks(self):
+        if not self.tasks:
+            return f"Error: No tasks found in project '{self.name}'"
+        return [f"Title: {t.title}, Status: {t.status}, Deadline: {t.deadline}" for t in self.tasks]
+
+
 
     def __str__(self):
         tasks_str = ",".join([f"{t.title} ({t.status}, {t.deadline})" for t in self.tasks])
@@ -122,13 +128,3 @@ class Task:
 
     def __str__(self):
         return f"Task Title: {self.title}, Status: {self.status}, Deadline: {self.deadline}"
-pm = ManageProject()
-pm.create_project("Learn Python", "Python basics")
-project = pm.projects[0]
-
-task1 = Task("Study OOP", "Learn OOP", "2025-10-20")
-project.add_task(task1)
-
-# حذف تسک
-print(project.remove_task("Study OOP"))  # ✅ Task حذف می‌شود
-print(project.tasks)  # ❌ لیست تسک‌ها خالی است
