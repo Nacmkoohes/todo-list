@@ -20,16 +20,15 @@ class Project:
 
         self.tasks.append(task)
         return f"Task '{task.title}' added successfully to project '{self.name}'"
-    def delete_task(self,task_title):
-        task = next((t for t in self.tasks if t.title == task_title), None)
-        if not task:
-            return f"Error: Task '{task_title}' not found in project '{self.name}'"
+
+
+    def remove_task(self,task):
         self.tasks.remove(task)
         return f"Task '{task_title}' deleted successfully from project '{self.name}'"
 
     def __str__(self):
-        return f"Project Name: {self.name} Tasks: {self.tasks} Description:{str(self.description)}"
-
+        tasks_str = ",".join([f"{t.title} ({t.status}, {t.deadline})" for t in self.tasks])
+        return f"Project Name: {self.name} | Tasks: [{tasks_str}] | Description: {self.description}"
 
 class ManageProject:
     MAX_NUMBER_OF_PROJECTS = 10
@@ -76,6 +75,13 @@ class ManageProject:
         #Cascade Delete
         project.tasks.clear()
         return f"Project '{name}' and all it's tasks have been deleted successfully."
+    def list_projects(self):
+        if not self.projects:
+            return "Error: No projects found."
+        #sort projects by deadline of the tasks
+        sorted_projects = sorted(self.projects,key=lambda p:p.tasks[0].deadline if p.tasks else "9999-12-31")
+        return [str(p) for p in sorted_projects]
+
 
 
 class Task:
@@ -113,4 +119,3 @@ class Task:
 
     def __str__(self):
         return f"Task Title: {self.title}, Status: {self.status}, Deadline: {self.deadline}"
-
