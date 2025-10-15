@@ -224,3 +224,37 @@ class Task:
         dl = self.deadline.isoformat() if self.deadline else "-"
         return f"Task Title: {self.title}, Status: {self.status}, Deadline: {dl}"
 
+if __name__ == "__main__" and 
+
+    mp = ManageProject()
+    print("== Create two projects ==")
+    print(mp.create_project("P1", "first project"))
+    print(mp.create_project("P2", "second project"))
+
+    print("\n== List projects (with IDs) ==")
+    for line in mp.list_projects():
+        print(line)
+
+    # get by ID
+    p1 = mp.get_project_by_id(1)
+    print("\nGot project #1? ->", "OK" if p1 else "NOT FOUND")
+
+    print("\n== Add tasks to #1 ==")
+    t1 = Task("Write tests", "pytest", "2025-12-01", "Doing")
+    print(p1.add_task(t1))
+    t2 = Task("Ship", "release", None)  # default todo
+    print(p1.add_task(t2))
+
+    print("\n== List tasks of #1 ==")
+    for line in p1.list_tasks():
+        print(line)
+
+    print("\n== Remove task by ID (remove t1) ==")
+    print(p1.remove_task_by_id(t1.id))
+    for line in p1.list_tasks():
+        print(line)
+
+    print("\n== Delete project by ID (cascade) ==")
+    print(mp.delete_project_by_id(1))
+    print("List projects after delete:")
+    print(mp.list_projects())
