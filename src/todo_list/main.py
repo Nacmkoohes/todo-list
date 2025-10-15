@@ -1,14 +1,13 @@
-MAX_NUMBER_OF_TASKS = 10
-
+from todo_list.config import MAX_NUMBER_OF_PROJECTS, MAX_NUMBER_OF_TASKS
 
 class Project:
-    MAX_NUMBER_OF_TASKS = 10
+
     def __init__(self,name,description):
         self.name = name
         self.description = description
         self.tasks = []
     def add_task(self,task):
-        if len(self.tasks)>= self.MAX_NUMBER_OF_TASKS:
+        if len(self.tasks)>= MAX_NUMBER_OF_TASKS:
             return "Error: Maximum number of tasks reached."
         if len(task.title.split())>30:
             return "Error: Task name is too long."
@@ -46,7 +45,7 @@ class ManageProject:
         self.projects = []
     def create_project(self,name,description):
         #Number of Projects should be less than the MAX_NUMBER_OF_PROJECTS
-        if len(self.projects) >= self.MAX_NUMBER_OF_PROJECTS:
+        if len(self.projects) >= MAX_NUMBER_OF_PROJECTS:
             return "Error:Maximum number of projects reached."
         #Project's name should be less than 30 words
         if len(name.split()) > 30:
