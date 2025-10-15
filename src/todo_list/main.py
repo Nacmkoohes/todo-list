@@ -1,9 +1,23 @@
 from todo_list.config import MAX_NUMBER_OF_PROJECTS, MAX_NUMBER_OF_TASKS
+from datetime import date
 
 ALLOWED_STATUSES = {"todo", "doing", "done"}
 
 def _norm_status(s: str) -> str:
     return s.strip().lower()
+
+
+def _parse_deadline(d):
+    """None یا رشته ISO (YYYY-MM-DD) را به date تبدیل می‌کند؛ در غیر این صورت خطا."""
+    if d in (None, "", " ", "null"):
+        return None
+    if isinstance(d, date):
+        return d
+    try:
+        return date.fromisoformat(str(d).strip())
+    except Exception:
+        raise ValueError("Error: Deadline must be in YYYY-MM-DD format.")
+
 
 class Project:
 
@@ -46,7 +60,7 @@ class Project:
         return f"Project Name: {self.name} | Tasks: [{tasks_str}] | Description: {self.description}"
 
 class ManageProject:
-    
+
 
     def __init__(self):
         self.projects = []
@@ -104,7 +118,7 @@ class Task:
     def __init__(self, title, description, deadline, status="todo"):
         self.title = title
         self.description = description
-        self.deadline = deadline
+        self.deadline = _parse_deadline(deadline)
 
         s = _norm_status(status)
         if s not in ALLOWED_STATUSES:
@@ -127,8 +141,13 @@ class Task:
                 if len(new_description.split()) > 150:
                     return "Error: Task description must be <= 150 words."
                 self.description = new_description
-        if new_deadline:
-                self.deadline = new_deadline
+        if new_deadline is not None:
+            try:
+                self.deadline = _parse_deadline(new_deadline)
+            except ValueError as e:
+                return str(e)
+
+
         if new_status:
             s = _norm_status(new_status)
             if s not in ALLOWED_STATUSES:
@@ -137,6 +156,6 @@ class Task:
 
         return f"Task '{self.title}' updated successfully "
 
-
     def __str__(self):
-        return f"Task Title: {self.title}, Status: {self.status}, Deadline: {self.deadline}"
+        dl = self.deadline.isoformat() if self.deadline else "-"
+        return f"Task Title: {self.title}, Status: {self.status}, Deadline: {dl}"
