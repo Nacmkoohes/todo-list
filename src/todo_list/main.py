@@ -188,6 +188,28 @@ class Task:
 
         return f"Task '{self.title}' updated successfully "
 
+    def get_task_by_id(self, task_id: int):
+        return next((t for t in self.tasks if t.id == task_id), None)
+
+    def remove_task_by_id(self, task_id: int):
+        task = self.get_task_by_id(task_id)
+        if not task:
+            return f"Error: Task #{task_id} not found in project '{self.name}'"
+        self.tasks.remove(task)
+        return f"Task #{task_id} removed successfully from project '{self.name}'"
+
+    def change_task_status_by_id(self, task_id: int, new_status: str):
+        task = self.get_task_by_id(task_id)
+        if not task:
+            return f"Error: Task #{task_id} not found in project '{self.name}'"
+        return task.change_status(new_status)
+
+    def edit_task_by_id(self, task_id: int, **kwargs):
+        task = self.get_task_by_id(task_id)
+        if not task:
+            return f"Error: Task #{task_id} not found in project '{self.name}'"
+        return task.edit_task(**kwargs)
+
     def __str__(self):
         dl = self.deadline.isoformat() if self.deadline else "-"
         return f"Task Title: {self.title}, Status: {self.status}, Deadline: {dl}"
