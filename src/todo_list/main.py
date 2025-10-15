@@ -61,16 +61,16 @@ class Project:
         if not self.tasks:
             return f"Error: No tasks found in project '{self.name}'"
         return [
-            f"Title: {t.title}, Status: {t.status}, Deadline: {t.deadline.isoformat() if t.deadline else '-'}"
+            f"ID: {t.id} | Title: {t.title}, Status: {t.status}, Deadline: {t.deadline.isoformat() if t.deadline else '-'}"
             for t in self.tasks
         ]
 
     def __str__(self):
         tasks_str = ", ".join(
-            f"{t.title} ({t.status}, {t.deadline.isoformat() if t.deadline else '-'})"
+            f"#{t.id} {t.title} ({t.status}, {t.deadline.isoformat() if t.deadline else '-'})"
             for t in self.tasks
         )
-        return f"Project Name: {self.name} | Tasks: [{tasks_str}] | Description: {self.description}"
+        return f"#{self.id}|Project Name: {self.name} | Tasks: [{tasks_str}] | Description: {self.description}"
 
 
 class ManageProject:
