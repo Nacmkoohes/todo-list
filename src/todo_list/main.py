@@ -1,5 +1,6 @@
 from todo_list.config import MAX_NUMBER_OF_PROJECTS, MAX_NUMBER_OF_TASKS
 from datetime import date
+from datetime import datetime
 
 ALLOWED_STATUSES = {"todo", "doing", "done"}
 
@@ -25,6 +26,8 @@ class Project:
         self.name = name
         self.description = description
         self.tasks = []
+        self.created_at = datetime.utcnow()
+
     def add_task(self,task):
         if len(self.tasks)>= MAX_NUMBER_OF_TASKS:
             return "Error: Maximum number of tasks reached."
