@@ -126,6 +126,23 @@ class ManageProject:
         sorted_projects = sorted(self.projects, key=lambda p: p.created_at, reverse=True)
         return [str(p) for p in sorted_projects]
 
+    def get_project_by_id(self, project_id: int):
+        return next((p for p in self.projects if p.id == project_id), None)
+
+    def delete_project_by_id(self, project_id: int):
+        project = self.get_project_by_id(project_id)
+        if not project:
+            return "Error: Project not found."
+        self.projects.remove(project)
+        project.tasks.clear()  # cascade
+        return f"Project #{project_id} and all its tasks have been deleted successfully."
+
+    def list_tasks_by_project_id(self, project_id: int):
+        p = self.get_project_by_id(project_id)
+        if not p:
+            return "Error: Project not found."
+        return p.list_tasks()
+
 
 class Task:
 
