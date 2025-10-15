@@ -1,5 +1,10 @@
 from todo_list.config import MAX_NUMBER_OF_PROJECTS, MAX_NUMBER_OF_TASKS
 
+ALLOWED_STATUSES = {"todo", "doing", "done"}
+
+def _norm_status(s: str) -> str:
+    return s.strip().lower()
+
 class Project:
 
     def __init__(self,name,description):
@@ -14,8 +19,10 @@ class Project:
         if len(task.description.split())>150:
             return "Error: Task description is too long."
 
-        if task.status not in ["Todo","Doing","Done"]:
+        s = _norm_status(task.status)
+        if s not in ALLOWED_STATUSES:
             return "Error: Task status is invalid."
+        task.status = s
 
         self.tasks.append(task)
         return f"Task '{task.title}' added successfully to project '{self.name}'"
@@ -39,7 +46,7 @@ class Project:
         return f"Project Name: {self.name} | Tasks: [{tasks_str}] | Description: {self.description}"
 
 class ManageProject:
-    MAX_NUMBER_OF_PROJECTS = 10
+    
 
     def __init__(self):
         self.projects = []
@@ -94,18 +101,22 @@ class ManageProject:
 
 class Task:
 
-    def __init__(self,title,description,deadline,status="Todo"):
+    def __init__(self, title, description, deadline, status="todo"):
         self.title = title
         self.description = description
         self.deadline = deadline
-        self.status = status
-    def change_status(self, new_status):
-        if new_status in ["Todo","Doing","Done"]:
-            self.status = new_status
-            return f"Task '{self.title}' status changed to '{new_status}'"
-        else:
 
-            return "Error:Invalid status"
+        s = _norm_status(status)
+        if s not in ALLOWED_STATUSES:
+            raise ValueError("Error: Task status is invalid.")
+        self.status = s
+
+    def change_status(self, new_status):
+        s = _norm_status(new_status)
+        if s not in ALLOWED_STATUSES:
+            return "Error: Invalid status"
+        self.status = s
+        return f"Task '{self.title}' status changed to '{s}'"
 
     def edit_task(self,new_title=None,new_description=None,new_deadline=None,new_status=None):
         if new_title:
@@ -119,9 +130,11 @@ class Task:
         if new_deadline:
                 self.deadline = new_deadline
         if new_status:
-            if new_status not in ["Todo", "Doing", "Done"]:
+            s = _norm_status(new_status)
+            if s not in ALLOWED_STATUSES:
                 return "Error: Task status is invalid."
-            self.status = new_status
+            self.status = s
+
         return f"Task '{self.title}' updated successfully "
 
 
