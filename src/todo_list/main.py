@@ -113,13 +113,13 @@ class ManageProject:
         #Cascade Delete
         project.tasks.clear()
         return f"Project '{name}' and all it's tasks have been deleted successfully."
+
     def list_projects(self):
         if not self.projects:
             return "Error: No projects found."
-        #sort projects by deadline of the tasks
-        sorted_projects = sorted(self.projects,key=lambda p:p.tasks[0].deadline if p.tasks else "9999-12-31")
+        # sort by project creation time (newest first)
+        sorted_projects = sorted(self.projects, key=lambda p: p.created_at, reverse=True)
         return [str(p) for p in sorted_projects]
-
 
 
 class Task:
