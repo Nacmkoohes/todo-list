@@ -48,10 +48,14 @@ class Project:
 
         self.tasks.remove(task)
         return f"Task '{task_title}' removed successfully from project '{self.name}'"
+
     def list_tasks(self):
         if not self.tasks:
             return f"Error: No tasks found in project '{self.name}'"
-        return [f"Title: {t.title}, Status: {t.status}, Deadline: {t.deadline}" for t in self.tasks]
+        return [
+            f"Title: {t.title}, Status: {t.status}, Deadline: {t.deadline.isoformat() if t.deadline else '-'}"
+            for t in self.tasks
+        ]
 
     def __str__(self):
         tasks_str = ", ".join(
