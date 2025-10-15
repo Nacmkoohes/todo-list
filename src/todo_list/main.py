@@ -1,6 +1,10 @@
 from todo_list.config import MAX_NUMBER_OF_PROJECTS, MAX_NUMBER_OF_TASKS
 from datetime import date
 from datetime import datetime
+from itertools import count
+_project_ids = count(1)
+_task_ids = count(1)
+
 
 ALLOWED_STATUSES = {"todo", "doing", "done"}
 
@@ -23,6 +27,7 @@ def _parse_deadline(d):
 class Project:
 
     def __init__(self,name,description):
+        self.id = next(_project_ids)
         self.name = name
         self.description = description
         self.tasks = []
@@ -125,6 +130,7 @@ class ManageProject:
 class Task:
 
     def __init__(self, title, description, deadline, status="todo"):
+        self.id = next(_task_ids)
         self.title = title
         self.description = description
         self.deadline = _parse_deadline(deadline)
@@ -168,3 +174,4 @@ class Task:
     def __str__(self):
         dl = self.deadline.isoformat() if self.deadline else "-"
         return f"Task Title: {self.title}, Status: {self.status}, Deadline: {dl}"
+
