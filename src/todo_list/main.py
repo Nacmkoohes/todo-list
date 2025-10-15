@@ -65,6 +65,16 @@ class Project:
             for t in self.tasks
         ]
 
+    def get_task_by_id(self, task_id: int):
+        return next((t for t in self.tasks if t.id == task_id), None)
+
+    def remove_task_by_id(self, task_id: int):
+        task = self.get_task_by_id(task_id)
+        if not task:
+            return f"Error: Task #{task_id} not found in project '{self.name}'"
+        self.tasks.remove(task)
+        return f"Task #{task_id} removed successfully from project '{self.name}'"
+
     def __str__(self):
         tasks_str = ", ".join(
             f"#{t.id} {t.title} ({t.status}, {t.deadline.isoformat() if t.deadline else '-'})"
