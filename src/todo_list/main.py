@@ -1,7 +1,7 @@
 from __future__ import annotations
 from todo_list.config import MAX_NUMBER_OF_PROJECTS, MAX_NUMBER_OF_TASKS
 from datetime import date
-from datetime import datetime
+from datetime import datetime,timezone
 from itertools import count
 from  typing import Optional
 
@@ -34,7 +34,7 @@ class Project:
         self.name = name
         self.description = description
         self.tasks :list[Task] = []
-        self.created_at = datetime.utcnow()
+        self.created_at = datetime.now(timezone.utc)
 
     def add_task(self,task):
         if len(self.tasks)>= MAX_NUMBER_OF_TASKS:
