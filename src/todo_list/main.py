@@ -132,7 +132,8 @@ class ManageProject:
         return f"Project '{old}' updated successfully to '{project.name}'"
 
     def delete_project(self, name: str) -> str:
-        project = next((p for p in self.projects if p.name == name), None)
+        name_s = name.strip()
+        project = next((p for p in self.projects if p.name.strip() == name_s), None)
         if not project:
             return "Error: Project not found."
 
