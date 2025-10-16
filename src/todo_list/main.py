@@ -3,7 +3,7 @@ from todo_list.config import MAX_NUMBER_OF_PROJECTS, MAX_NUMBER_OF_TASKS
 from datetime import date
 from datetime import datetime,timezone
 from itertools import count
-from  typing import Optional
+from typing import Optional
 
 _project_ids = count(1)
 _task_ids = count(1)
