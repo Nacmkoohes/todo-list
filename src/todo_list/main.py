@@ -1,7 +1,10 @@
+from __future__ import annotations
 from todo_list.config import MAX_NUMBER_OF_PROJECTS, MAX_NUMBER_OF_TASKS
 from datetime import date
 from datetime import datetime
 from itertools import count
+from  typing import Optional
+
 _project_ids = count(1)
 _task_ids = count(1)
 
@@ -30,7 +33,7 @@ class Project:
         self.id = next(_project_ids)
         self.name = name
         self.description = description
-        self.tasks = []
+        self.tasks :list[Task] = []
         self.created_at = datetime.utcnow()
 
     def add_task(self,task):
@@ -86,9 +89,10 @@ class Project:
 class ManageProject:
 
 
-    def __init__(self):
-        self.projects = []
-    def create_project(self,name,description):
+    def __init__(self)->None:
+        self.projects : list[Project]=[]
+
+    def create_project(self, name: str, description: str) -> str:
         #Number of Projects should be less than the MAX_NUMBER_OF_PROJECTS
         if len(self.projects) >= MAX_NUMBER_OF_PROJECTS:
             return "Error:Maximum number of projects reached."
@@ -97,29 +101,38 @@ class ManageProject:
             return "Error: Project's name must be <= 30 words."
         if len(description.split()) > 150:
             return "Error: Project's description must be <= 150 words."
-        if any(p.name==name for p in self.projects):
+        if any(p.name.strip().lower()==name.strip().lower() for p in self.projects):
             return "Error: Project name already exists."
 
         new_project = Project(name,description)
         self.projects.append(new_project)
-        return f"Project created successfully."
-    def edit_project(self,old_name,new_name,new_description):
-        project=next((p for p in self.projects if p.name == old_name), None)
+        return "Project created successfully."
+
+    def edit_project(self, old_name: str, new_name: str, new_description: str) -> str:
+        project = next((p for p in self.projects if p.name.strip() == old_name.strip()), None)
         if not project:
             return "Error: Project does not exist."
-        if len(new_name.split()) > 30:
+
+        new_name_s = new_name.strip()
+        new_desc_s = new_description.strip()
+
+        if len(new_name_s.split()) > 30:
             return "Error: Project's name must be <= 30 words."
-        if len(new_description.split()) > 150:
+        if len(new_desc_s.split()) > 150:
             return "Error: Project's description must be <= 150 words."
 
-        if any(p.name==new_name and p!=project for p in self.projects):
+        if any(p is not project and p.name.strip().lower() == new_name_s.lower() for p in self.projects):
             return "Error: Project name already exists."
 
-        project.name = new_name
-        project.description = new_description
-        return f" Project '{old_name}' updated successfully to '{new_name}'"
+        if project.name == new_name_s and project.description == new_desc_s:
+            return "Error: No changes detected."
 
-    def delete_project(self, name):
+        old = project.name
+        project.name = new_name_s
+        project.description = new_desc_s
+        return f"Project '{old}' updated successfully to '{project.name}'"
+
+    def delete_project(self, name: str) -> str:
         project = next((p for p in self.projects if p.name == name), None)
         if not project:
             return "Error: Project not found."
@@ -129,17 +142,10 @@ class ManageProject:
         project.tasks.clear()
         return f"Project '{name}' and all it's tasks have been deleted successfully."
 
-    def list_projects(self):
-        if not self.projects:
-            return "Error: No projects found."
-        # sort by project creation time (newest first)
-        sorted_projects = sorted(self.projects, key=lambda p: p.created_at, reverse=True)
-        return [str(p) for p in sorted_projects]
-
-    def get_project_by_id(self, project_id: int):
+    def get_project_by_id(self, project_id: int) -> Optional[Project]:
         return next((p for p in self.projects if p.id == project_id), None)
 
-    def delete_project_by_id(self, project_id: int):
+    def delete_project_by_id(self, project_id: int) -> str:
         project = self.get_project_by_id(project_id)
         if not project:
             return "Error: Project not found."
@@ -152,6 +158,11 @@ class ManageProject:
         if not p:
             return "Error: Project not found."
         return p.list_tasks()
+    def list_projects(self) -> list[str] | str:
+        if not self.projects:
+            return "Error: No projects found."
+        sorted_projects = sorted(self.projects, key=lambda p: p.created_at, reverse=True)
+        return [str(p) for p in sorted_projects]
 
 
 class Task:
@@ -224,37 +235,3 @@ class Task:
         dl = self.deadline.isoformat() if self.deadline else "-"
         return f"Task Title: {self.title}, Status: {self.status}, Deadline: {dl}"
 
-if __name__ == "__main__" and 
-
-    mp = ManageProject()
-    print("== Create two projects ==")
-    print(mp.create_project("P1", "first project"))
-    print(mp.create_project("P2", "second project"))
-
-    print("\n== List projects (with IDs) ==")
-    for line in mp.list_projects():
-        print(line)
-
-    # get by ID
-    p1 = mp.get_project_by_id(1)
-    print("\nGot project #1? ->", "OK" if p1 else "NOT FOUND")
-
-    print("\n== Add tasks to #1 ==")
-    t1 = Task("Write tests", "pytest", "2025-12-01", "Doing")
-    print(p1.add_task(t1))
-    t2 = Task("Ship", "release", None)  # default todo
-    print(p1.add_task(t2))
-
-    print("\n== List tasks of #1 ==")
-    for line in p1.list_tasks():
-        print(line)
-
-    print("\n== Remove task by ID (remove t1) ==")
-    print(p1.remove_task_by_id(t1.id))
-    for line in p1.list_tasks():
-        print(line)
-
-    print("\n== Delete project by ID (cascade) ==")
-    print(mp.delete_project_by_id(1))
-    print("List projects after delete:")
-    print(mp.list_projects())
