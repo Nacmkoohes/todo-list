@@ -150,7 +150,7 @@ class ManageProject:
             return "Error: Project not found."
         self.projects.remove(project)
         project.tasks.clear()  # cascade
-        return f"Project #{project_id} and all its tasks have been deleted successfully."
+        return f"Project #{project_id} and all it's tasks have been deleted successfully."
 
     def list_tasks_by_project_id(self, project_id: int)->list[str]|str:
         p = self.get_project_by_id(project_id)
