@@ -94,7 +94,7 @@ class ManageProject:
     def create_project(self, name: str, description: str) -> str:
         #Number of Projects should be less than the MAX_NUMBER_OF_PROJECTS
         if len(self.projects) >= MAX_NUMBER_OF_PROJECTS:
-            return "Error:Maximum number of projects reached."
+            return "Error: Maximum number of projects reached."
         #Project's name should be less than 30 words
         if len(name.split()) > 30:
             return "Error: Project's name must be <= 30 words."
