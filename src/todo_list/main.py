@@ -92,18 +92,21 @@ class ManageProject:
         self.projects : list[Project]=[]
 
     def create_project(self, name: str, description: str) -> str:
-        #Number of Projects should be less than the MAX_NUMBER_OF_PROJECTS
-        if len(self.projects) >= MAX_NUMBER_OF_PROJECTS:
-            return "Error: Maximum number of projects reached."
-        #Project's name should be less than 30 words
-        if len(name.split()) > 30:
+        name_s = name.strip()
+        desc_s = description.strip()
+
+        if len(name_s.split()) > 30:
             return "Error: Project's name must be <= 30 words."
-        if len(description.split()) > 150:
+        if len(desc_s.split()) > 150:
             return "Error: Project's description must be <= 150 words."
-        if any(p.name.strip().lower()==name.strip().lower() for p in self.projects):
+
+        if any(p.name.strip().lower() == name_s.lower() for p in self.projects):
             return "Error: Project name already exists."
 
-        new_project = Project(name,description)
+        if len(self.projects) >= MAX_NUMBER_OF_PROJECTS:
+            return "Error: Maximum number of projects reached."
+
+        new_project = Project(name_s, desc_s)
         self.projects.append(new_project)
         return "Project created successfully."
 
