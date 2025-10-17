@@ -159,12 +159,16 @@ class ManageProject:
     def get_project_by_id(self, project_id: int) -> Optional[Project]:
         return next((p for p in self.projects if p.id == project_id), None)
 
+    def get_project_by_name(self, name: str) -> Optional[Project]:
+        return self._by_name.get(_key(name))
+
     def delete_project_by_id(self, project_id: int) -> str:
         project = self.get_project_by_id(project_id)
         if not project:
             return "Error: Project not found."
         self.projects.remove(project)
         project.tasks.clear()  # cascade
+        self._by_name.pop(_key(project.name), None)
         return f"Project #{project_id} and all it's tasks have been deleted successfully."
 
     def list_tasks_by_project_id(self, project_id: int)->list[str]|str:
