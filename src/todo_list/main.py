@@ -104,7 +104,7 @@ class ManageProject:
         if len(desc_s.split()) > 150:
             return "Error: Project's description must be <= 150 words."
 
-        if any(p.name.strip().lower() == name_s.lower() for p in self.projects):
+        if _key(name_s) in self._by_name:
             return "Error: Project name already exists."
 
         if len(self.projects) >= MAX_NUMBER_OF_PROJECTS:
@@ -112,6 +112,7 @@ class ManageProject:
 
         new_project = Project(name_s, desc_s)
         self.projects.append(new_project)
+        self._by_name[_key(name_s)] = new_project
         return "Project created successfully."
 
     def edit_project(self, old_name: str, new_name: str, new_description: str) -> str:
