@@ -211,3 +211,8 @@ class Task:
             self.status = s
 
         return f"Task '{self.title}' updated successfully "
+
+    def __str__(self) -> str:
+        dl = self.deadline.isoformat() if self.deadline else "-"
+        return f"Task Title: {self.title}, Status: {self.status}, Deadline: {dl}"
+
