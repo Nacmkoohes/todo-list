@@ -14,6 +14,9 @@ ALLOWED_STATUSES = {"todo", "doing", "done"}
 def _norm_status(s: str) -> str:
     return s.strip().lower()
 
+def _key(name: str) -> str:
+    return name.strip().lower()
+
 
 def _parse_deadline(d):
     if d in (None, "", " ", "null"):
@@ -90,6 +93,7 @@ class ManageProject:
 
     def __init__(self)->None:
         self.projects : list[Project]=[]
+        self._by_name: dict[str, Project] = {}
 
     def create_project(self, name: str, description: str) -> str:
         name_s = name.strip()
