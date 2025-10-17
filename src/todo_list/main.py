@@ -116,7 +116,7 @@ class ManageProject:
         return "Project created successfully."
 
     def edit_project(self, old_name: str, new_name: str, new_description: str) -> str:
-        project = next((p for p in self.projects if p.name.strip() == old_name.strip()), None)
+        project = self._by_name.get(_key(old_name))
         if not project:
             return "Error: Project does not exist."
 
@@ -128,7 +128,8 @@ class ManageProject:
         if len(new_desc_s.split()) > 150:
             return "Error: Project's description must be <= 150 words."
 
-        if any(p is not project and p.name.strip().lower() == new_name_s.lower() for p in self.projects):
+        new_key = _key(new_name_s)
+        if new_key in self._by_name and self._by_name[new_key] is not project:
             return "Error: Project name already exists."
 
         if project.name == new_name_s and project.description == new_desc_s:
@@ -137,6 +138,10 @@ class ManageProject:
         old = project.name
         project.name = new_name_s
         project.description = new_desc_s
+        old_key = _key(old)
+        if old_key  in self._by_name:
+            del self._by_name[old_key]
+        self._by_name[new_key] = project
         return f"Project '{old}' updated successfully to '{project.name}'"
 
     def delete_project(self, name: str) -> str:
