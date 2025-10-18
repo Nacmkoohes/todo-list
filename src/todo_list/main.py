@@ -1,5 +1,5 @@
 from __future__ import annotations
-from todo_list.config import MAX_NUMBER_OF_PROJECTS, MAX_NUMBER_OF_TASKS
+from .config import MAX_NUMBER_OF_PROJECTS, MAX_NUMBER_OF_TASKS
 from datetime import date
 from datetime import datetime,timezone
 from itertools import count
