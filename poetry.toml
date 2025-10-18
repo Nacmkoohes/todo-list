@@ -1,2 +1,16 @@
-[virtualenvs]
-in-project = true
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "todo-list-nasim"
+version = "0.1.0"
+description = "A simple todo CLI with clean separation of concerns"
+readme = "README.md"
+requires-python = ">=3.10"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.scripts]
+todo = "todo_list.cli:main"
