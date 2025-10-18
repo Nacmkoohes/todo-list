@@ -1,16 +1,12 @@
 from __future__ import annotations
 from todo_list.config import MAX_NUMBER_OF_PROJECTS, MAX_NUMBER_OF_TASKS
 from datetime import date
-from datetime import datetime,timezone
+from datetime import datetime, timezone
 from itertools import count
 from typing import Optional
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
 
 _project_ids = count(1)
 _task_ids = count(1)
-
 
 ALLOWED_STATUSES = {"todo", "doing", "done"}
 
@@ -19,7 +15,6 @@ def _norm_status(s: str) -> str:
 
 def _key(name: str) -> str:
     return name.strip().lower()
-
 
 def _parse_deadline(d):
     if d in (None, "", " ", "null"):
@@ -31,22 +26,20 @@ def _parse_deadline(d):
     except Exception:
         raise ValueError("Error: Deadline must be in YYYY-MM-DD format.")
 
-
 class Project:
-
-    def __init__(self,name,description):
+    def __init__(self, name, description):
         self.id = next(_project_ids)
         self.name = name
         self.description = description
-        self.tasks :list[Task] = []
+        self.tasks: list[Task] = []
         self.created_at = datetime.now(timezone.utc)
 
-    def add_task(self,task):
-        if len(self.tasks)>= MAX_NUMBER_OF_TASKS:
+    def add_task(self, task):
+        if len(self.tasks) >= MAX_NUMBER_OF_TASKS:
             return "Error: Maximum number of tasks reached."
-        if len(task.title.split())>30:
+        if len(task.title.split()) > 30:
             return "Error: Task name is too long."
-        if len(task.description.split())>150:
+        if len(task.description.split()) > 150:
             return "Error: Task description is too long."
 
         s = _norm_status(task.status)
@@ -61,7 +54,6 @@ class Project:
         task = next((t for t in self.tasks if t.title == task_title), None)
         if not task:
             return f"Error: Task '{task_title}' not found in project '{self.name}'"
-
         self.tasks.remove(task)
         return f"Task '{task_title}' removed successfully from project '{self.name}'"
 
@@ -90,12 +82,9 @@ class Project:
         )
         return f"#{self.id}|Project Name: {self.name} | Tasks: [{tasks_str}] | Description: {self.description}"
 
-
 class ManageProject:
-
-
-    def __init__(self)->None:
-        self.projects : list[Project]=[]
+    def __init__(self) -> None:
+        self.projects: list[Project] = []
         self._by_name: dict[str, Project] = {}
 
     def create_project(self, name: str, description: str) -> str:
@@ -142,7 +131,7 @@ class ManageProject:
         project.name = new_name_s
         project.description = new_desc_s
         old_key = _key(old)
-        if old_key  in self._by_name:
+        if old_key in self._by_name:
             del self._by_name[old_key]
         self._by_name[new_key] = project
         return f"Project '{old}' updated successfully to '{project.name}'"
@@ -154,7 +143,7 @@ class ManageProject:
             return "Error: Project not found."
 
         self.projects.remove(project)
-        #Cascade Delete
+        # Cascade Delete
         project.tasks.clear()
         self._by_name.pop(_key(name_s), None)
         return f"Project '{name_s}' and all it's tasks have been deleted successfully."
@@ -174,20 +163,19 @@ class ManageProject:
         self._by_name.pop(_key(project.name), None)
         return f"Project #{project_id} and all it's tasks have been deleted successfully."
 
-    def list_tasks_by_project_id(self, project_id: int)->list[str]|str:
+    def list_tasks_by_project_id(self, project_id: int) -> list[str] | str:
         p = self.get_project_by_id(project_id)
         if not p:
             return "Error: Project not found."
         return p.list_tasks()
+
     def list_projects(self) -> list[str] | str:
         if not self.projects:
             return "Error: No projects found."
         sorted_projects = sorted(self.projects, key=lambda p: p.created_at, reverse=True)
         return [str(p) for p in sorted_projects]
 
-
 class Task:
-
     def __init__(self, title, description, deadline, status="todo"):
         self.id = next(_task_ids)
         self.title = title
@@ -206,22 +194,20 @@ class Task:
         self.status = s
         return f"Task '{self.title}' status changed to '{s}'"
 
-    def edit_task(self,new_title=None,new_description=None,new_deadline=None,new_status=None):
+    def edit_task(self, new_title=None, new_description=None, new_deadline=None, new_status=None):
         if new_title:
             if len(new_title.split()) > 30:
                 return "Error: Task title must be <= 30 words."
             self.title = new_title
         if new_description:
-                if len(new_description.split()) > 150:
-                    return "Error: Task description must be <= 150 words."
-                self.description = new_description
+            if len(new_description.split()) > 150:
+                return "Error: Task description must be <= 150 words."
+            self.description = new_description
         if new_deadline is not None:
             try:
                 self.deadline = _parse_deadline(new_deadline)
             except ValueError as e:
                 return str(e)
-
-
         if new_status:
             s = _norm_status(new_status)
             if s not in ALLOWED_STATUSES:
