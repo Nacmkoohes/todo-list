@@ -4,6 +4,9 @@ from datetime import date
 from datetime import datetime,timezone
 from itertools import count
 from typing import Optional
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
 
 _project_ids = count(1)
 _task_ids = count(1)
