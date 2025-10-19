@@ -1,0 +1,59 @@
+[
+    {
+        "project_id": 1,
+        "name": "Project 1",
+        "description": "HELLO WORLD BY PYTHON",
+        "created_at": "2025-10-19T18:45:05.424840+00:00",
+        "tasks": [
+            {
+                "id": 1,
+                "title": "LEARN PYTHON",
+                "description": "BY YOUTUBE VIDEOS",
+                "deadline": null,
+                "status": "todo"
+            }
+        ]
+    },
+    {
+        "project_id": 2,
+        "name": "Test Project",
+        "description": "This is a test project.",
+        "created_at": "2025-10-19T18:53:16.892073+00:00",
+        "tasks": []
+    },
+    {
+        "project_id": 3,
+        "name": "Test Project",
+        "description": "This is a test project.",
+        "created_at": "2025-10-19T18:53:16.904572+00:00",
+        "tasks": []
+    },
+    {
+        "project_id": 4,
+        "name": "Test Project",
+        "description": "This is a test project.",
+        "created_at": "2025-10-19T18:53:16.905969+00:00",
+        "tasks": []
+    },
+    {
+        "project_id": 5,
+        "name": "Test Project",
+        "description": "This is a test project.",
+        "created_at": "2025-10-19T18:53:16.907682+00:00",
+        "tasks": []
+    },
+    {
+        "project_id": 6,
+        "name": "Test Project",
+        "description": "This is a test project.",
+        "created_at": "2025-10-19T18:53:16.908890+00:00",
+        "tasks": []
+    },
+    {
+        "project_id": 7,
+        "name": "Test Project",
+        "description": "This is a test project.",
+        "created_at": "2025-10-19T18:53:16.909348+00:00",
+        "tasks": []
+    }
+]
