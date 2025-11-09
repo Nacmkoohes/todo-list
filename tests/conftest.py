@@ -1,18 +1,16 @@
-from project_service import ProjectService
-from task_service import TaskService
+# tests/conftest.py
+import os, sys, pathlib, importlib
 
-# سرویس‌ها خودشان in-memory store می‌سازند
-ps = ProjectService()
-p = ps.create_project("Proj A")
+# ریشهٔ ریپو را به مسیر import اضافه کن
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
-ts = TaskService(project_store=ps.project_store)  # به همان پروژه‌ها وصلش کن
-t1 = ts.add_task(p.id, "Write tests")
-t2 = ts.add_task(p.id, "Refactor services")
+# تنظیم پیش‌فرض‌های محیط برای تست‌ها (در صورت نیاز)
+os.environ.setdefault("MAX_NUMBER_OF_PROJECTS", "3")
+os.environ.setdefault("MAX_NUMBER_OF_TASKS", "5")
+os.environ.setdefault("ALLOWED_STATUSES", "todo,doing,done")
 
-print([t.title for t in ts.list_tasks(p.id)])  # ['Write tests', 'Refactor services']
-
-ts.change_status(p.id, t1.id, "doing")
-ts.edit_task(p.id, t2.id, title="Refactor services (clean)")
-ts.delete_task(p.id, t1.id)
-
-print([(t.title, t.status) for t in ts.list_tasks(p.id)])  # فقط تسک دوم با status پیش‌فرض
+# config را بعد از ست کردن env ها reload کن
+import config
+importlib.reload(config)

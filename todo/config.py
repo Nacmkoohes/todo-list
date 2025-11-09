@@ -3,10 +3,10 @@ import os
 from typing import List
 
 try:
-    from dotenv import load_dotenv  # pip install python-dotenv
-    load_dotenv()  # loads .env if present
+    from dotenv import load_dotenv  # optional
+    load_dotenv()
 except Exception:
-    pass  # if dotenv not available, fall back to defaults
+    pass
 
 def _getint(name: str, default: int) -> int:
     raw = os.getenv(name)

@@ -1,170 +1,199 @@
-import argparse
-from services.project_service import ProjectService
-from services.task_service import TaskService
-from config import ALLOWED_STATUSES
-# Create instances of the services
-project_service = ProjectService('projects.json')
-task_service = TaskService()
+# todo/cli.py
+from __future__ import annotations
+from typing import List, Tuple
+from .services.project_service import ProjectService
+from .services.task_service import TaskService
+from .config import ALLOWED_STATUSES
 
+# --- Boot services (shared in-memory store)
+ps = ProjectService()
+ts = TaskService(project_store=ps.project_store)
 
-class CLIApp:
-    def __init__(self):
-        self.project_service = ProjectService()
-        self.task_service = TaskService()
+# ---------- Utils (table + inputs) ----------
+def _line(w: int) -> str:
+    return "─" * w
 
-    # Function to print the main menu
-    def print_menu(self):
-        print("\n===== TO DO LIST APP =====")
-        print("1. Create a new project")
-        print("2. Show all projects")
-        print("3. Add a task to a project")
-        print("4. Show all tasks of a project")
-        print("5. Edit a project")
-        print("6. Delete a project")
-        print("7. Change task status")
-        print("8. Exit")
+def _fmt_row(cols: List[Tuple[str, int]]) -> str:
+    parts = []
+    for text, w in cols:
+        s = str(text)
+        if len(s) > w:
+            s = s[: w - 1] + "…"
+        parts.append(s.ljust(w))
+    return "│ " + " │ ".join(parts) + " │"
 
-    # Function to create a project
-    def create_project(self):
-        name = input("Enter project name: ")
-        description = input("Enter project description: ")
-        project = self.project_service.create_project(name, description)
-        print(f"Project '{project.name}' created successfully.")
+def print_table(headers: List[Tuple[str, int]], rows: List[List[str]]) -> None:
+    total_w = 3 + sum(w + 3 for _, w in headers)
+    print("┌" + _line(total_w - 2) + "┐")
+    print(_fmt_row(headers))
+    print("├" + _line(total_w - 2) + "┤")
+    for r in rows:
+        print(_fmt_row([(c, headers[i][1]) for i, c in enumerate(r)]))
+    print("└" + _line(total_w - 2) + "┘")
 
-    # Function to show all projects
-    def show_projects(self):
-        projects = self.project_service.list_projects()
-        if not projects:
-            print("No projects found.")
-            return
-        for project in projects:
-            print(f"ID: {project.project_id} | Name: {project.name} | Description: {project.description}")
+def ask(prompt: str, allow_empty: bool = False) -> str:
+    while True:
+        v = input(prompt).strip()
+        if v or allow_empty:
+            return v
+        print("⚠️  Value cannot be empty.")
 
-    # Function to add a task to a project
-    def add_task(self):
-        self.show_projects()
-        try:
-            project_id = int(input("Enter project ID to add task: ").strip())
-        except ValueError:
-            print("Invalid project ID. Please enter a number.")
-            return
+def pause():
+    input("\n⏎ Press Enter to continue…")
 
-        title = input("Enter task title: ").strip()
-        description = input("Enter task description: ").strip()
-        status = input("Enter task status (todo, doing, done): ").strip().lower()
+# ---------- Menus ----------
+def menu_main():
+    print("\n===== ToDo CLI (Layered) =====")
+    print(" 1) Create Project")
+    print(" 2) List Projects")
+    print(" 3) Edit Project")
+    print(" 4) Delete Project")
+    print(" 5) Add Task")
+    print(" 6) List Tasks")
+    print(" 7) Change Task Status")
+    print(" 8) Edit Task")
+    print(" 9) Delete Task")
+    print(" 0) Exit")
+    return ask("Choose an option: ")
 
-        if status not in ALLOWED_STATUSES:
-            print(f"Error: Task status is invalid. Allowed: {', '.join(sorted(ALLOWED_STATUSES))}")
-            return
+# ---------- Actions (9 user stories) ----------
+def create_project():
+    name = ask("Project name: ")
+    desc = ask("Description (optional): ", allow_empty=True)
+    try:
+        p = ps.create_project(name, desc)
+        print(f"✅ Created: {p.name} ({p.id})")
+    except Exception as e:
+        print(f"❌ {e}")
+    pause()
 
-        project = self.project_service.get_project_by_id(project_id)
-        if not project:
-            print("Project not found.")
-            return
+def list_projects(show_pause=True):
+    projects = list(ps.list_projects())
+    headers = [("Name", 24), ("Project ID", 36), ("#Tasks", 6)]
+    rows = [[p.name, p.id, str(len(p.tasks))] for p in projects]
+    print()
+    print_table(headers, rows)
+    if show_pause:
+        pause()
 
-        task = self.task_service.create_task(title, description, status=status)
-        if isinstance(task, str) and task.startswith("Error"):
-            print(task)
-            return
+def edit_project():
+    list_projects(show_pause=False)
+    pid = ask("Project ID: ")
+    new_name = ask("New name (empty = no change): ", allow_empty=True)
+    new_desc = ask("New description (empty = no change): ", allow_empty=True)
+    try:
+        kwargs = {}
+        if new_name: kwargs["name"] = new_name
+        if new_desc: kwargs["description"] = new_desc
+        p = ps.edit_project(pid, **kwargs)
+        print(f"✏️  Edited: {p.name} ({p.id})")
+    except Exception as e:
+        print(f"❌ {e}")
+    pause()
 
-        result = project.add_task(task)
-        print(result)
-        if not result.lower().startswith("error"):
-            self.project_service.save_projects()
+def delete_project():
+    list_projects(show_pause=False)
+    pid = ask("Project ID to delete: ")
+    try:
+        ps.delete_project(pid)
+        print(f"🗑️  Project deleted: {pid}")
+    except Exception as e:
+        print(f"❌ {e}")
+    pause()
 
-    # Function to show all tasks of a project
-    def show_tasks(self):
-        self.show_projects()  # Display all projects
-        project_id = int(input("Enter project ID to show tasks: "))
-        project = self.project_service.get_project_by_id(project_id)
-        if project:
-            tasks = project.list_tasks()
-            if tasks:
-                for task in tasks:
-                    print(f"ID: {task.id} | Title: {task.title} | Status: {task.status}")
-            else:
-                print("No tasks in this project.")
+def add_task():
+    list_projects(show_pause=False)
+    pid = ask("Project ID: ")
+    title = ask("Task title: ")
+    desc = ask("Description (optional): ", allow_empty=True)
+    try:
+        t = ts.add_task(pid, title, desc)
+        print(f"➕ Task added: {t.title} ({t.id})")
+    except Exception as e:
+        print(f"❌ {e}")
+    pause()
+
+def list_tasks(show_pause=True):
+    list_projects(show_pause=False)
+    pid = ask("Project ID: ")
+    try:
+        tasks = list(ts.list_tasks(pid))
+        headers = [("Title", 28), ("Task ID", 36), ("Status", 12)]
+        rows = [[t.title, t.id, t.status] for t in tasks]
+        print()
+        print_table(headers, rows)
+    except Exception as e:
+        print(f"❌ {e}")
+    if show_pause:
+        pause()
+
+def change_status():
+    list_tasks(show_pause=False)
+    pid = ask("Project ID: ")
+    tid = ask("Task ID: ")
+    print(f"Allowed statuses: {', '.join(ALLOWED_STATUSES)}")
+    status = ask("New status: ")
+    try:
+        t = ts.change_status(pid, tid, status)
+        print(f"🔁 {t.title} -> {t.status}")
+    except Exception as e:
+        print(f"❌ {e}")
+    pause()
+
+def edit_task():
+    list_tasks(show_pause=False)
+    pid = ask("Project ID: ")
+    tid = ask("Task ID: ")
+    title = ask("New title (empty = no change): ", allow_empty=True)
+    desc  = ask("New description (empty = no change): ", allow_empty=True)
+    status= ask("New status (empty = no change): ", allow_empty=True)
+    try:
+        kwargs = {}
+        if title: kwargs["title"] = title
+        if desc:  kwargs["description"] = desc
+        if status: kwargs["status"] = status
+        t = ts.edit_task(pid, tid, **kwargs)
+        print(f"✏️  Edited task: {t.title} ({t.id}) — {t.status}")
+    except Exception as e:
+        print(f"❌ {e}")
+    pause()
+
+def delete_task():
+    list_tasks(show_pause=False)
+    pid = ask("Project ID: ")
+    tid = ask("Task ID: ")
+    try:
+        ts.delete_task(pid, tid)
+        print(f"🗑️  Task deleted: {tid}")
+    except Exception as e:
+        print(f"❌ {e}")
+    pause()
+
+# ---------- App loop ----------
+def main():
+    actions = {
+        "1": create_project,
+        "2": list_projects,
+        "3": edit_project,
+        "4": delete_project,
+        "5": add_task,
+        "6": list_tasks,
+        "7": change_status,
+        "8": edit_task,
+        "9": delete_task,
+        "0": lambda: None,
+    }
+    while True:
+        choice = menu_main()
+        if choice == "0":
+            print("Bye! 👋")
+            break
+        action = actions.get(choice)
+        if action:
+            action()
         else:
-            print("Project not found.")
+            print("⚠️  Invalid option.")
+            pause()
 
-    # Function to edit a project
-    def edit_project(self):
-        self.show_projects()
-        project_id = int(input("Enter project ID to edit: "))
-        new_name = input("Enter new project name: ")
-        new_description = input("Enter new project description: ")
-        updated = self.project_service.edit_project(project_id, new_name, new_description)
-        print(f"Project updated: {updated}")
-
-    # Function to delete a project
-    def delete_project(self):
-        self.show_projects()
-        project_id = int(input("Enter project ID to delete: "))  # Use the correct project ID for deletion
-        deleted = self.project_service.delete_project(project_id)
-        print(f"Project deleted: {deleted}")
-
-    def change_task_status(self):
-        self.show_projects()
-        try:
-            project_id = int(input("Enter project ID of the task: ").strip())
-        except ValueError:
-            print("Invalid project ID. Please enter a number.")
-            return
-
-        project = self.project_service.get_project_by_id(project_id)
-        if not project:
-            print("Project not found.")
-            return
-
-        try:
-            task_id = int(input("Enter task ID to change status: ").strip())
-        except ValueError:
-            print("Invalid task ID. Please enter a number.")
-            return
-
-        task = next((t for t in project.tasks if getattr(t, "id", None) == task_id), None)
-        if not task:
-            print("Task not found.")
-            return
-
-        new_status = input("Enter new status (todo, doing, done): ").strip().lower()
-        if new_status not in ALLOWED_STATUSES:
-            print(f"Error: Task status is invalid. Allowed: {', '.join(sorted(ALLOWED_STATUSES))}")
-            return
-
-        msg = task.change_status(new_status)
-        print(msg)
-        if not msg.lower().startswith("error"):
-            self.project_service.save_projects()
-
-    # Main function that runs the menu
-    def main(self):
-        while True:
-            self.print_menu()  # Print the menu
-            choice = input("Select an option: ").strip()
-
-            if choice == "1":
-                self.create_project()
-            elif choice == "2":
-                self.show_projects()
-            elif choice == "3":
-                self.add_task()
-            elif choice == "4":
-                self.show_tasks()
-            elif choice == "5":
-                self.edit_project()
-            elif choice == "6":
-                self.delete_project()
-            elif choice == "7":
-                self.change_task_status()
-            elif choice == "8":
-                print("Goodbye!")
-                break
-            else:
-                print("Invalid option!")
-
-
-# Entry point for the CLI program
 if __name__ == "__main__":
-    app = CLIApp()  # Create an instance of the CLIApp
-    app.main()  # Run the main function
+    main()
