@@ -1,3 +1,2 @@
 MAX_NUMBER_OF_PROJECTS = 5
 MAX_NUMBER_OF_TASKS = 20
-ALLOWED_STATUSES = ["todo", "doing", "done"]

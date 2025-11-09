@@ -1,4 +1,12 @@
-.idea/
-*.pyc
 __pycache__/
-poetry.lock
+*.pyc
+.venv/
+venv/
+.env
+.pytest_cache/
+.mypy_cache/
+.DS_Store
+.vscode/
+.idea/
+.env
+.env
