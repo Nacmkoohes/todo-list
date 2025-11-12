@@ -6,6 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from todo.db.base import Base
 if TYPE_CHECKING:
     from .project import  Project
+closed_at =mapped_column(DateTime(timezone=True), nullable=False)
 class Task(Base):
     __tablename__ = "tasks"
 
