@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Iterable, Optional
 from ..config import MAX_NUMBER_OF_TASKS, ALLOWED_STATUSES
-from ..repositories import Task
+from todo.models.task import Task
 
 class TaskService:
     def __init__(self, task_store=None, project_store=None) -> None:

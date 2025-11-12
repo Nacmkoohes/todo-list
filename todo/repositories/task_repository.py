@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Protocol, Callable, Optional, List
-from datetime import datetime
+from datetime import datetime,timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from todo.models.task import Task
@@ -22,6 +22,18 @@ class TaskRepository(Protocol):
 class SqlAlchemyTaskRepository(TaskRepository):
     def __init__(self, session_factory: Callable[[], Session]):
         self._session_factory = session_factory
+
+    def list_overdue_open(self, session_factory) -> list[Task]:
+        """Tasks with deadline < now and status != 'done'."""
+        now = datetime.now(timezone.utc)
+        with session_factory() as s:
+            stmt = (
+                select(Task)
+                .where(Task.deadline.isnot(None))
+                .where(Task.deadline < now)
+                .where(Task.status != "done")
+            )
+            return list(s.scalars(stmt).all())
 
     def create(
         self,

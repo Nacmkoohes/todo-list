@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Iterable, Optional
 from ..config import MAX_NUMBER_OF_PROJECTS
-from ..repositories import Project
+from todo.models.project import Project
 
 class ProjectService:
     def __init__(self, project_store=None) -> None:
