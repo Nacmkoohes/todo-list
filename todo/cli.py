@@ -1,199 +1,262 @@
 # todo/cli.py
 from __future__ import annotations
-from typing import List, Tuple
-from .services.project_service import ProjectService
-from .services.task_service import TaskService
-from .config import ALLOWED_STATUSES
 
-# --- Boot services (shared in-memory store)
-ps = ProjectService()
-ts = TaskService(project_store=ps.project_store)
+from typing import Optional
+from todo.app_factory import build_services
+from todo.exceptions.service_exceptions import (
+    ProjectAlreadyExists, ProjectNotFound, TaskNotFound, InvalidStatus
+)
+from todo.config import ALLOWED_STATUSES
 
-# ---------- Utils (table + inputs) ----------
-def _line(w: int) -> str:
-    return "─" * w
+# Only I/O here; all business rules live in services
+ps, ts = build_services()
 
-def _fmt_row(cols: List[Tuple[str, int]]) -> str:
-    parts = []
-    for text, w in cols:
-        s = str(text)
-        if len(s) > w:
-            s = s[: w - 1] + "…"
-        parts.append(s.ljust(w))
-    return "│ " + " │ ".join(parts) + " │"
 
-def print_table(headers: List[Tuple[str, int]], rows: List[List[str]]) -> None:
-    total_w = 3 + sum(w + 3 for _, w in headers)
-    print("┌" + _line(total_w - 2) + "┐")
-    print(_fmt_row(headers))
-    print("├" + _line(total_w - 2) + "┤")
-    for r in rows:
-        print(_fmt_row([(c, headers[i][1]) for i, c in enumerate(r)]))
-    print("└" + _line(total_w - 2) + "┘")
+# -------- Helpers (inputs + selectors) --------
+def _input_int(prompt: str) -> Optional[int]:
+    raw = input(prompt).strip()
+    if not raw:
+        return None
+    if not raw.isdigit():
+        print("❌ Please enter a positive integer.")
+        return None
+    return int(raw)
 
-def ask(prompt: str, allow_empty: bool = False) -> str:
-    while True:
-        v = input(prompt).strip()
-        if v or allow_empty:
-            return v
-        print("⚠️  Value cannot be empty.")
+def _select_project_id() -> int | None:
+    projects = list(ps.list_projects())
+    if not projects:
+        print("ℹ️ No projects.")
+        return None
 
-def pause():
-    input("\n⏎ Press Enter to continue…")
+    print("\nProjects:")
+    for i, p in enumerate(projects, start=1):
+        print(f"{i}) #{p.id}  {p.name}")
 
-# ---------- Menus ----------
-def menu_main():
-    print("\n===== ToDo CLI (Layered) =====")
-    print(" 1) Create Project")
-    print(" 2) List Projects")
-    print(" 3) Edit Project")
-    print(" 4) Delete Project")
-    print(" 5) Add Task")
-    print(" 6) List Tasks")
-    print(" 7) Change Task Status")
-    print(" 8) Edit Task")
-    print(" 9) Delete Task")
-    print(" 0) Exit")
-    return ask("Choose an option: ")
+    raw = input("Pick project (number / ID / exact name / partial): ").strip()
+    if not raw:
+        return None
 
-# ---------- Actions (9 user stories) ----------
+    # number (1..N)
+    if raw.isdigit():
+        idx = int(raw)
+        if 1 <= idx <= len(projects):
+            return projects[idx - 1].id
+
+    # try ID
+    if raw.isdigit():
+        return int(raw)
+
+    # exact name (case-insensitive)
+    for p in projects:
+        if p.name.lower() == raw.lower():
+            return p.id
+
+    # partial name
+    matches = [p for p in projects if raw.lower() in p.name.lower()]
+    if len(matches) == 1:
+        return matches[0].id
+    elif len(matches) > 1:
+        print("Multiple matches:")
+        for p in matches:
+            print(f"- #{p.id}  {p.name}")
+        return None
+
+    print("❌ Not found.")
+    return None
+
+def _select_task_id(project_id: int) -> int | None:
+    tasks = list(ts.list_tasks_by_project(project_id))
+    if not tasks:
+        print("ℹ️ No tasks for this project.")
+        return None
+
+    print("\nTasks:")
+    for i, t in enumerate(tasks, start=1):
+        d = t.deadline.date().isoformat() if getattr(t, "deadline", None) else "-"
+        print(f"{i}) #{t.id}  {t.title}  [{t.status}]  (deadline={d})")
+
+    raw = input("Pick task (number / ID / exact title / partial): ").strip()
+    if not raw:
+        return None
+
+    if raw.isdigit():
+        idx = int(raw)
+        if 1 <= idx <= len(tasks):
+            return tasks[idx - 1].id
+
+    if raw.isdigit():
+        return int(raw)
+
+    for t in tasks:
+        if t.title.lower() == raw.lower():
+            return t.id
+
+    matches = [t for t in tasks if raw.lower() in t.title.lower()]
+    if len(matches) == 1:
+        return matches[0].id
+    elif len(matches) > 1:
+        print("Multiple matches:")
+        for t in matches:
+            print(f"- #{t.id}  {t.title}")
+        return None
+
+    print("❌ Not found.")
+    return None
+
+
+# -------- Menu handlers (9 user stories) --------
 def create_project():
-    name = ask("Project name: ")
-    desc = ask("Description (optional): ", allow_empty=True)
+    name = input("Project name: ").strip()
+    desc = input("Description (optional): ").strip() or None
     try:
         p = ps.create_project(name, desc)
-        print(f"✅ Created: {p.name} ({p.id})")
-    except Exception as e:
+        print(f"✅ Project created: #{p.id} – {p.name}")
+    except ProjectAlreadyExists as e:
         print(f"❌ {e}")
-    pause()
-
-def list_projects(show_pause=True):
-    projects = list(ps.list_projects())
-    headers = [("Name", 24), ("Project ID", 36), ("#Tasks", 6)]
-    rows = [[p.name, p.id, str(len(p.tasks))] for p in projects]
-    print()
-    print_table(headers, rows)
-    if show_pause:
-        pause()
+    except ValueError as e:
+        print(f"❌ {e}")
 
 def edit_project():
-    list_projects(show_pause=False)
-    pid = ask("Project ID: ")
-    new_name = ask("New name (empty = no change): ", allow_empty=True)
-    new_desc = ask("New description (empty = no change): ", allow_empty=True)
+    pid = _select_project_id()
+    if not pid:
+        return
+    new_name = input("New name (leave empty to keep): ").strip() or None
+    new_desc = input("New desc (leave empty to keep): ").strip() or None
     try:
-        kwargs = {}
-        if new_name: kwargs["name"] = new_name
-        if new_desc: kwargs["description"] = new_desc
-        p = ps.edit_project(pid, **kwargs)
-        print(f"✏️  Edited: {p.name} ({p.id})")
-    except Exception as e:
+        p = ps.edit_project(pid, name=new_name, description=new_desc)
+        print(f"✅ Project updated: #{p.id} – {p.name}")
+    except ProjectNotFound as e:
         print(f"❌ {e}")
-    pause()
+    except ProjectAlreadyExists as e:
+        print(f"❌ {e}")
 
 def delete_project():
-    list_projects(show_pause=False)
-    pid = ask("Project ID to delete: ")
+    pid = _select_project_id()
+    if not pid:
+        return
     try:
-        ps.delete_project(pid)
-        print(f"🗑️  Project deleted: {pid}")
-    except Exception as e:
+        ps.delete_project(pid)  # FK CASCADE removes tasks
+        print("✅ Project deleted.")
+    except ProjectNotFound as e:
         print(f"❌ {e}")
-    pause()
+
+def list_projects():
+    projects = list(ps.list_projects())
+    if not projects:
+        print("ℹ️ No projects.")
+        return
+    print("\nID | Name                | Description")
+    print("-- | ------------------- | -----------")
+    for p in projects:
+        print(f"{p.id:>2} | {p.name:<19} | {p.description or ''}")
+    print()
 
 def add_task():
-    list_projects(show_pause=False)
-    pid = ask("Project ID: ")
-    title = ask("Task title: ")
-    desc = ask("Description (optional): ", allow_empty=True)
+    pid = _select_project_id()
+    if not pid:
+        return
+    title = input("Task title: ").strip()
+    desc = input("Task description (optional): ").strip() or None
+    deadline = input("Deadline (YYYY-MM-DD or empty): ").strip() or None
     try:
-        t = ts.add_task(pid, title, desc)
-        print(f"➕ Task added: {t.title} ({t.id})")
-    except Exception as e:
+        t = ts.add_task(pid, title, description=desc, deadline=deadline)
+        print(f"✅ Task created: #{t.id} – {t.title}")
+    except ProjectNotFound as e:
         print(f"❌ {e}")
-    pause()
-
-def list_tasks(show_pause=True):
-    list_projects(show_pause=False)
-    pid = ask("Project ID: ")
-    try:
-        tasks = list(ts.list_tasks(pid))
-        headers = [("Title", 28), ("Task ID", 36), ("Status", 12)]
-        rows = [[t.title, t.id, t.status] for t in tasks]
-        print()
-        print_table(headers, rows)
-    except Exception as e:
+    except ValueError as e:
         print(f"❌ {e}")
-    if show_pause:
-        pause()
-
-def change_status():
-    list_tasks(show_pause=False)
-    pid = ask("Project ID: ")
-    tid = ask("Task ID: ")
-    print(f"Allowed statuses: {', '.join(ALLOWED_STATUSES)}")
-    status = ask("New status: ")
-    try:
-        t = ts.change_status(pid, tid, status)
-        print(f"🔁 {t.title} -> {t.status}")
-    except Exception as e:
-        print(f"❌ {e}")
-    pause()
 
 def edit_task():
-    list_tasks(show_pause=False)
-    pid = ask("Project ID: ")
-    tid = ask("Task ID: ")
-    title = ask("New title (empty = no change): ", allow_empty=True)
-    desc  = ask("New description (empty = no change): ", allow_empty=True)
-    status= ask("New status (empty = no change): ", allow_empty=True)
+    pid = _select_project_id()
+    if not pid:
+        return
+    tid = _select_task_id(pid)
+    if not tid:
+        return
+    new_title = input("New title (empty = keep): ").strip() or None
+    new_desc = input("New desc (empty = keep): ").strip() or None
+    new_deadline = input("New deadline YYYY-MM-DD (empty = keep): ").strip() or None
     try:
-        kwargs = {}
-        if title: kwargs["title"] = title
-        if desc:  kwargs["description"] = desc
-        if status: kwargs["status"] = status
-        t = ts.edit_task(pid, tid, **kwargs)
-        print(f"✏️  Edited task: {t.title} ({t.id}) — {t.status}")
-    except Exception as e:
+        t = ts.edit_task(tid, title=new_title, description=new_desc, deadline=new_deadline)
+        print(f"✅ Task updated: #{t.id} – {t.title}")
+    except TaskNotFound as e:
         print(f"❌ {e}")
-    pause()
+    except ValueError as e:
+        print(f"❌ {e}")
 
 def delete_task():
-    list_tasks(show_pause=False)
-    pid = ask("Project ID: ")
-    tid = ask("Task ID: ")
+    pid = _select_project_id()
+    if not pid:
+        return
+    tid = _select_task_id(pid)
+    if not tid:
+        return
     try:
-        ts.delete_task(pid, tid)
-        print(f"🗑️  Task deleted: {tid}")
-    except Exception as e:
+        ts.delete_task(tid)
+        print("✅ Task deleted.")
+    except TaskNotFound as e:
         print(f"❌ {e}")
-    pause()
 
-# ---------- App loop ----------
+def list_tasks_by_project():
+    pid = _select_project_id()
+    if not pid:
+        return
+    tasks = list(ts.list_tasks_by_project(pid))
+    if not tasks:
+        print("ℹ️ No tasks for this project.")
+        return
+    print("\nID | Title               | Status | Deadline")
+    print("-- | ------------------- | ------ | --------")
+    for t in tasks:
+        d = t.deadline.date().isoformat() if getattr(t, "deadline", None) else "-"
+        print(f"{t.id:>2} | {t.title:<19} | {t.status:<6} | {d}")
+    print()
+
+def change_task_status():
+    pid = _select_project_id()
+    if not pid:
+        return
+    tid = _select_task_id(pid)
+    if not tid:
+        return
+    print(f"Allowed: {', '.join(ALLOWED_STATUSES)}")
+    st = input("New status: ").strip().lower()
+    try:
+        t = ts.change_task_status(tid, st)
+        print(f"✅ Status changed: #{t.id} → {t.status}")
+    except TaskNotFound as e:
+        print(f"❌ {e}")
+    except InvalidStatus as e:
+        print(f"❌ {e}")
+
+
+# -------- Menu loop --------
 def main():
-    actions = {
-        "1": create_project,
-        "2": list_projects,
-        "3": edit_project,
-        "4": delete_project,
-        "5": add_task,
-        "6": list_tasks,
-        "7": change_status,
-        "8": edit_task,
-        "9": delete_task,
-        "0": lambda: None,
+    MENU = {
+        "1": ("Create Project", create_project),
+        "2": ("Edit Project", edit_project),
+        "3": ("Delete Project", delete_project),
+        "4": ("List Projects", list_projects),
+        "5": ("Add Task", add_task),
+        "6": ("Edit Task", edit_task),
+        "7": ("Delete Task", delete_task),
+        "8": ("List Tasks by Project", list_tasks_by_project),
+        "9": ("Change Task Status", change_task_status),
+        "0": ("Exit", None),
     }
     while True:
-        choice = menu_main()
+        print("\n=== ToDo CLI ===")
+        for k, (label, _) in MENU.items():
+            print(f"{k}) {label}")
+        choice = input("Choose an option: ").strip()
         if choice == "0":
-            print("Bye! 👋")
+            print("Bye!")
             break
-        action = actions.get(choice)
-        if action:
-            action()
-        else:
-            print("⚠️  Invalid option.")
-            pause()
+        action = MENU.get(choice)
+        if not action:
+            print("❌ Invalid option.")
+            continue
+        action[1]()  # run handler
 
 if __name__ == "__main__":
     main()

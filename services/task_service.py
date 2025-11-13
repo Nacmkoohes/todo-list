@@ -1,7 +1,7 @@
-from models.task import Task
+from todo.models.task import Task
 from typing import Optional
 from datetime import date
-from config import ALLOWED_STATUSES
+from todo.config import ALLOWED_STATUSES
 def _norm_status(s: str) -> str:
     return s.strip().lower()
 

@@ -1,12 +1,20 @@
+# Python
 __pycache__/
 *.pyc
+*.pyo
+
+# Envs
+.env
 .venv/
 venv/
-.env
-.pytest_cache/
-.mypy_cache/
-.DS_Store
+
+# IDEs
 .vscode/
 .idea/
-.env
-.env
+
+# Bytecode / builds
+dist/
+build/
+
+# Alembic
+alembic/versions/*.pyc

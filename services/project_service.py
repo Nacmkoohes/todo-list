@@ -2,8 +2,8 @@
 import json
 from datetime import datetime
 from typing import Optional, List
-from models.project import Project
-from models.task import Task
+from todo.models.project import Project
+from todo.models.task import Task
 
 class ProjectService:
 

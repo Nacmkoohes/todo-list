@@ -1,80 +1,78 @@
 from __future__ import annotations
-from typing import Protocol, Callable, Optional, List
-from datetime import datetime,timezone
-from sqlalchemy.orm import Session
+from typing import Protocol, Iterable, Optional, List
+from datetime import datetime, timezone
 from sqlalchemy import select
+from sqlalchemy.orm import Session
+from todo.db.session import SessionLocal
 from todo.models.task import Task
 
 class TaskRepository(Protocol):
-    def create(
-        self,
-        project_id: int,
-        title: str,
-        description: str = "",
-        status: str = "todo",
-        deadline: datetime | None = None,
-    ) -> Task: ...
-    def get(self, task_id: int) -> Optional[Task]: ...
-    def list_by_project(self, project_id: int) -> List[Task]: ...
-    def update(self, task: Task) -> None: ...
-    def delete(self, task_id: int) -> bool: ...
+    def create(self, project_id: int, title: str,
+               description: Optional[str] = None,
+               deadline: Optional[datetime] = None) -> Task: ...
+    def update(self, task_id: int, **fields) -> Task: ...
+    def delete(self, task_id: int) -> None: ...
+    def get_by_id(self, task_id: int) -> Optional[Task]: ...
+    def list_by_project(self, project_id: int) -> Iterable[Task]: ...
+    def list_overdue_open(self) -> Iterable[Task]: ...
 
 class SqlAlchemyTaskRepository(TaskRepository):
-    def __init__(self, session_factory: Callable[[], Session]):
-        self._session_factory = session_factory
+    def __init__(self, session_factory=SessionLocal) -> None:
+        self.session_factory = session_factory
 
-    def list_overdue_open(self, session_factory) -> list[Task]:
-        """Tasks with deadline < now and status != 'done'."""
-        now = datetime.now(timezone.utc)
-        with session_factory() as s:
-            stmt = (
-                select(Task)
-                .where(Task.deadline.isnot(None))
-                .where(Task.deadline < now)
-                .where(Task.status != "done")
-            )
-            return list(s.scalars(stmt).all())
-
-    def create(
-        self,
-        project_id: int,
-        title: str,
-        description: str = "",
-        status: str = "todo",
-        deadline: datetime | None = None,
-    ) -> Task:
-        with self._session_factory() as s:
-            t = Task(
-                project_id=project_id,
-                title=title.strip(),
-                description=description or "",
-                status=status,
-                deadline=deadline,
-            )
+    def create(self, project_id: int, title: str,
+               description: Optional[str] = None,
+               deadline: Optional[datetime] = None) -> Task:
+        with self.session_factory() as s:  # type: Session
+            t = Task(project_id=project_id, title=title,
+                     description=description, deadline=deadline)
             s.add(t)
             s.commit()
             s.refresh(t)
             return t
 
-    def get(self, task_id: int) -> Optional[Task]:
-        with self._session_factory() as s:
+    def update(self, task_id: int, **fields) -> Task:
+        with self.session_factory() as s:
+            t: Task | None = s.get(Task, task_id)
+            if not t:
+                raise LookupError(f"Task #{task_id} not found")
+            for k, v in fields.items():
+                if v is not None:
+                    setattr(t, k, v)
+            s.commit()
+            s.refresh(t)
+            return t
+
+    def delete(self, task_id: int) -> None:
+        with self.session_factory() as s:
+            t = s.get(Task, task_id)
+            if not t:
+                return
+            s.delete(t)
+            s.commit()
+
+    def get_by_id(self, task_id: int) -> Optional[Task]:
+        with self.session_factory() as s:
             return s.get(Task, task_id)
 
-    def list_by_project(self, project_id: int) -> List[Task]:
-        with self._session_factory() as s:
-            stmt = select(Task).where(Task.project_id == project_id).order_by(Task.id.asc())
-            return list(s.scalars(stmt))
+    def list_by_project(self, project_id: int) -> Iterable[Task]:
+        with self.session_factory() as s:
+            rows: List[Task] = (
+                s.execute(select(Task).where(Task.project_id == project_id).order_by(Task.id.asc()))
+                .scalars().all()
+            )
+            return rows
 
-    def update(self, task: Task) -> None:
-        with self._session_factory() as s:
-            s.merge(task)
-            s.commit()
-
-    def delete(self, task_id: int) -> bool:
-        with self._session_factory() as s:
-            obj = s.get(Task, task_id)
-            if not obj:
-                return False
-            s.delete(obj)
-            s.commit()
-            return True
+    def list_overdue_open(self) -> Iterable[Task]:
+        now = datetime.now(timezone.utc)
+        with self.session_factory() as s:
+            rows: List[Task] = (
+                s.execute(
+                    select(Task)
+                    .where(Task.deadline != None)     # noqa: E711
+                    .where(Task.deadline < now)
+                    .where(Task.status != "done")
+                    .order_by(Task.deadline.asc())
+                ).scalars().all()
+            )
+            return rows
