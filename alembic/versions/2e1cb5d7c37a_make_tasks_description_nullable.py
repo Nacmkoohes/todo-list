@@ -2,27 +2,25 @@ from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = '<REV_ID>'      # ← همان که Alembic ساخته
-down_revision = '<PREV_ID>' # ← همان قبلی
+revision = "2e1cb5d7c37a"
+down_revision = "f5a1111c32f7"   # ← MUST match previous file's revision
 branch_labels = None
 depends_on = None
 
+
 def upgrade():
-    # nullable=True
     op.alter_column(
-        'tasks',
-        'description',
-        existing_type=sa.String(length=1000),
-        nullable=True
+        "tasks",
+        "description",
+        existing_type=sa.Text(),
+        nullable=True,
     )
+
 
 def downgrade():
-    # برگرداندن به NOT NULL (برای سازگاری مجبوریم default بگذاریم)
     op.alter_column(
-        'tasks',
-        'description',
-        existing_type=sa.String(length=1000),
+        "tasks",
+        "description",
+        existing_type=sa.Text(),
         nullable=False,
-        server_default=''
     )
-
