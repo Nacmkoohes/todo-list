@@ -3,8 +3,6 @@ from __future__ import annotations
 from todo.app_factory import build_services
 from todo.repositories.task_repository import SqlAlchemyTaskRepository
 from todo.db.session import SessionLocal
-from datetime import datetime
-
 
 def run(dry_run: bool = False) -> int:
     ps, ts = build_services()
@@ -21,7 +19,7 @@ def run(dry_run: bool = False) -> int:
         if dry_run:
             print(f"DRY-RUN would close: [#{t.id}] {t.title} (deadline={t.deadline})")
             continue
-        ts.task_store.update(t.id, status="done", closed_at=datetime.utcnow())
+        ts.edit_task(t.id, status="done")
         print(f"Closed: [#{t.id}] {t.title}")
         affected += 1
 
