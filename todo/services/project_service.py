@@ -1,45 +1,54 @@
 from __future__ import annotations
-from typing import Iterable, Optional
-from ..config import MAX_NUMBER_OF_PROJECTS
-from ..repositories import Project
+from typing import Optional, Iterable
+from todo.config import MAX_NUMBER_OF_PROJECTS
+from todo.exceptions.service_exceptions import ProjectAlreadyExists, ProjectNotFound
+from todo.repositories.project_repository import ProjectRepository
+from todo.repositories.task_repository import TaskRepository  # for cascade checks if needed
 
 class ProjectService:
-    def __init__(self, project_store=None) -> None:
-        if project_store is None:
-            from ..in_memory_store import InMemoryProjectRepo
-            project_store = InMemoryProjectRepo()
+    def __init__(self, project_store: ProjectRepository, task_store: TaskRepository) -> None:
         self.project_store = project_store
+        self.task_store = task_store
 
-    def _to_int(self, value) -> int:
-        if isinstance(value, int):
-            return value
-        return int(str(value).strip())
+    # 1) Create Project
+    def create_project(self, name: str, description: Optional[str] = None):
+        name = (name or "").strip()
+        if not name:
+            raise ValueError("Project name cannot be empty.")
+        if self.project_store.get_by_name(name):
+            raise ProjectAlreadyExists(f'Project with name "{name}" already exists.')
+        # capacity check (optional business rule)
+        if len(list(self.project_store.list_all())) >= MAX_NUMBER_OF_PROJECTS:
+            raise ValueError("Maximum number of projects reached.")
+        return self.project_store.create(name, description)
 
-    # 1) Create
-    def create_project(self, name: str, description: str = "") -> Project:
-        if len(list(self.project_store.list())) >= MAX_NUMBER_OF_PROJECTS:
-            raise ValueError(f"Error: Maximum number of projects reached (limit={MAX_NUMBER_OF_PROJECTS}).")
-        p = Project(name=name.strip(), description=description.strip())
-        return self.project_store.add(p)
-
-    # 2) List
-    def list_projects(self) -> Iterable[Project]:
-        return self.project_store.list()
-
-    def get_project(self, project_id) -> Project:
-        return self.project_store.get(self._to_int(project_id))
-
-    # 3) Edit
-    def edit_project(self, project_id, *, name: Optional[str] = None, description: Optional[str] = None) -> Project:
-        pid = self._to_int(project_id)
-        p = self.project_store.get(pid)
+    # 2) Edit Project
+    def edit_project(self, project_id: int, name: Optional[str] = None, description: Optional[str] = None):
+        p = self.project_store.get_by_id(project_id)
+        if not p:
+            raise ProjectNotFound(f"Project #{project_id} not found.")
+        if name:
+            name = name.strip()
+            if name == "":
+                raise ValueError("Project name cannot be empty.")
+            other = self.project_store.get_by_name(name)
+            if other and other.id != project_id:
+                raise ProjectAlreadyExists(f'Project with name "{name}" already exists.')
+        updates = {}
         if name is not None:
-            p.name = name.strip()
+            updates["name"] = name
         if description is not None:
-            p.description = description.strip()
-        self.project_store.save(p)
-        return p
+            updates["description"] = description
+        if not updates:
+            return p
+        return self.project_store.update(project_id, **updates)
 
-    # 4) Delete
-    def delete_project(self, project_id) -> None:
-        self.project_store.delete(self._to_int(project_id))
+    # 3) Delete Project (tasks removed by FK CASCADE)
+    def delete_project(self, project_id: int) -> None:
+        if not self.project_store.get_by_id(project_id):
+            raise ProjectNotFound(f"Project #{project_id} not found.")
+        self.project_store.delete(project_id)
+
+    # 4) List Projects
+    def list_projects(self) -> Iterable:
+        return self.project_store.list_all()
