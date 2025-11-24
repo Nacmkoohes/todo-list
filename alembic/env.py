@@ -1,51 +1,62 @@
-# alembic/env.py
-from logging.config import fileConfig
-from alembic import context
-from sqlalchemy import engine_from_config, pool
-from dotenv import load_dotenv
-import os
+from __future__ import annotations
 
-load_dotenv()
+import logging
+from logging.config import fileConfig
+
+from alembic import context
+from sqlalchemy import create_engine, pool
 
 from todo.db.base import Base
 from todo.models.project import Project  # noqa: F401
 from todo.models.task import Task        # noqa: F401
 
+# این همون config Alembic هست
 config = context.config
+
+# لاگینگ از روی alembic.ini
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-DB_URL = (
-    f"postgresql+psycopg2://{os.getenv('DB_USER','todolist')}:"
-    f"{os.getenv('DB_PASSWORD','secret')}@{os.getenv('DB_HOST','localhost')}:"
-    f"{os.getenv('DB_PORT','5432')}/{os.getenv('DB_NAME','todolist')}"
-)
-config.set_main_option("sqlalchemy.url", DB_URL)
+logger = logging.getLogger("alembic.env")
 
+# ======  اینجا مستقیم URL درست رو می‌نویسیم  ======
+DB_URL = "postgresql+psycopg2://todolist:secret@127.0.0.1:5433/todolist"
+print("=== DB_URL used by Alembic ===")
+print(DB_URL)
+# =====================================
+
+# متادیتای مدل‌ها برای autogenerate
 target_metadata = Base.metadata
 
-def run_migrations_offline():
+
+def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode."""
+    url = DB_URL
     context.configure(
-        url=DB_URL,
+        url=url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
     )
+
     with context.begin_transaction():
         context.run_migrations()
 
 
-def run_migrations_online():
+def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section),
-        prefix="sqlalchemy.",
+    connectable = create_engine(
+        DB_URL,
         poolclass=pool.NullPool,
+        future=True,
     )
 
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+        )
+
         with context.begin_transaction():
             context.run_migrations()
 
