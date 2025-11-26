@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from todo.app_factory import build_services
+from todo.services.app_factory import build_services
 from todo.repositories.task_repository import SqlAlchemyTaskRepository
 from todo.db.session import SessionLocal
 

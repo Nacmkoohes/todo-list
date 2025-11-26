@@ -1,8 +1,12 @@
 from __future__ import annotations
+
 from typing import Optional, List
+
 from sqlalchemy import String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from todo.db.base import Base
+
 
 class Project(Base):
     __tablename__ = "projects"
@@ -13,7 +17,10 @@ class Project(Base):
     description: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
 
     tasks: Mapped[List["Task"]] = relationship(
-        "Task", back_populates="project", cascade="all, delete-orphan", passive_deletes=True
+        "Task",
+        back_populates="project",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
     )
 
     def __repr__(self) -> str:

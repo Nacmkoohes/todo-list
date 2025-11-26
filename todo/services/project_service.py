@@ -1,54 +1,51 @@
 from __future__ import annotations
-from typing import Optional, Iterable
+
+from typing import Iterable, Optional
+
 from todo.config import MAX_NUMBER_OF_PROJECTS
-from todo.exceptions.service_exceptions import ProjectAlreadyExists, ProjectNotFound
+from todo.models.project import Project
 from todo.repositories.project_repository import ProjectRepository
-from todo.repositories.task_repository import TaskRepository  # for cascade checks if needed
+from todo.repositories.task_repository import TaskRepository
+
 
 class ProjectService:
-    def __init__(self, project_store: ProjectRepository, task_store: TaskRepository) -> None:
-        self.project_store = project_store
-        self.task_store = task_store
+    """Application service for managing projects."""
 
-    # 1) Create Project
-    def create_project(self, name: str, description: Optional[str] = None):
-        name = (name or "").strip()
-        if not name:
-            raise ValueError("Project name cannot be empty.")
-        if self.project_store.get_by_name(name):
-            raise ProjectAlreadyExists(f'Project with name "{name}" already exists.')
-        # capacity check (optional business rule)
-        if len(list(self.project_store.list_all())) >= MAX_NUMBER_OF_PROJECTS:
-            raise ValueError("Maximum number of projects reached.")
-        return self.project_store.create(name, description)
+    def __init__(
+        self,
+        project_repo: ProjectRepository,
+        task_repo: TaskRepository,
+    ) -> None:
+        self.project_repo = project_repo
+        self.task_repo = task_repo
 
-    # 2) Edit Project
-    def edit_project(self, project_id: int, name: Optional[str] = None, description: Optional[str] = None):
-        p = self.project_store.get_by_id(project_id)
-        if not p:
-            raise ProjectNotFound(f"Project #{project_id} not found.")
-        if name:
-            name = name.strip()
-            if name == "":
-                raise ValueError("Project name cannot be empty.")
-            other = self.project_store.get_by_name(name)
-            if other and other.id != project_id:
-                raise ProjectAlreadyExists(f'Project with name "{name}" already exists.')
-        updates = {}
-        if name is not None:
-            updates["name"] = name
-        if description is not None:
-            updates["description"] = description
-        if not updates:
-            return p
-        return self.project_store.update(project_id, **updates)
+    def list_projects(self) -> Iterable[Project]:
+        return self.project_repo.list_all()
 
-    # 3) Delete Project (tasks removed by FK CASCADE)
+    def create_project(
+        self,
+        name: str,
+        description: Optional[str] = None,
+    ) -> Project:
+        existing_projects = list(self.project_repo.list_all())
+        if len(existing_projects) >= MAX_NUMBER_OF_PROJECTS:
+            raise ValueError("Maximum number of projects reached")
+
+        # Optional: check duplicate name
+        existing = self.project_repo.get_by_name(name)
+        if existing is not None:
+            raise ValueError("Project with this name already exists")
+
+        return self.project_repo.create(name=name, description=description)
+
+    def get_project(self, project_id: int) -> Optional[Project]:
+        return self.project_repo.get_by_id(project_id)
+
+    def update_project(self, project_id: int, **fields) -> Project:
+        # Could enforce domain rules here if needed
+        project = self.project_repo.update(project_id, **fields)
+        return project
+
     def delete_project(self, project_id: int) -> None:
-        if not self.project_store.get_by_id(project_id):
-            raise ProjectNotFound(f"Project #{project_id} not found.")
-        self.project_store.delete(project_id)
-
-    # 4) List Projects
-    def list_projects(self) -> Iterable:
-        return self.project_store.list_all()
+        # Deleting project cascades tasks by DB foreign key
+        self.project_repo.delete(project_id)

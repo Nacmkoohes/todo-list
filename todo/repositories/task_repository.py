@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Protocol, Iterable, Optional
+from typing import Any, Iterable, Optional, Protocol
 from datetime import datetime, timezone
 
 from sqlalchemy import select
@@ -11,6 +11,8 @@ from todo.models.task import Task
 
 
 class TaskRepository(Protocol):
+    """Abstraction for task persistence layer."""
+
     def create(
         self,
         project_id: int,
@@ -19,18 +21,16 @@ class TaskRepository(Protocol):
         deadline: Optional[datetime] = None,
     ) -> Task: ...
 
-    def update(self, task_id: int, **fields) -> Task: ...
-
+    def update(self, task_id: int, **fields: Any) -> Task: ...
     def delete(self, task_id: int) -> None: ...
-
     def get_by_id(self, task_id: int) -> Optional[Task]: ...
-
     def list_by_project(self, project_id: int) -> Iterable[Task]: ...
-
     def list_overdue_open(self) -> Iterable[Task]: ...
 
 
-class SqlAlchemyTaskRepository:
+class SqlAlchemyTaskRepository(TaskRepository):
+    """SQLAlchemy implementation of TaskRepository."""
+
     def __init__(self, session_factory=SessionLocal) -> None:
         self.session_factory = session_factory
 
@@ -42,37 +42,37 @@ class SqlAlchemyTaskRepository:
         deadline: Optional[datetime] = None,
     ) -> Task:
         with self.session_factory() as s:  # type: Session
-            t = Task(
+            task = Task(
                 project_id=project_id,
                 title=title,
                 description=description,
                 deadline=deadline,
             )
-            s.add(t)
+            s.add(task)
             s.commit()
-            s.refresh(t)
-            return t
+            s.refresh(task)
+            return task
 
-    def update(self, task_id: int, **fields) -> Task:
+    def update(self, task_id: int, **fields: Any) -> Task:
         with self.session_factory() as s:
-            t = s.get(Task, task_id)
-            if t is None:
+            task = s.get(Task, task_id)
+            if task is None:
                 raise LookupError(f"Task #{task_id} not found")
 
-            for k, v in fields.items():
-                if v is not None:
-                    setattr(t, k, v)
+            for key, value in fields.items():
+                if value is not None:
+                    setattr(task, key, value)
 
             s.commit()
-            s.refresh(t)
-            return t
+            s.refresh(task)
+            return task
 
     def delete(self, task_id: int) -> None:
         with self.session_factory() as s:
-            t = s.get(Task, task_id)
-            if t is None:
+            task = s.get(Task, task_id)
+            if task is None:
                 return
-            s.delete(t)
+            s.delete(task)
             s.commit()
 
     def get_by_id(self, task_id: int) -> Optional[Task]:

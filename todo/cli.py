@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from typing import Optional
-from todo.app_factory import build_services
+from todo.services.app_factory import build_services
 from todo.exceptions.service_exceptions import (
     ProjectAlreadyExists, ProjectNotFound, TaskNotFound, InvalidStatus
 )
