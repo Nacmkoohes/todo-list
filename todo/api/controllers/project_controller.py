@@ -3,12 +3,10 @@ from __future__ import annotations
 from typing import List
 
 from fastapi import APIRouter, HTTPException, status
-
 from ..controller_schemas.project_requests import ProjectCreate, ProjectUpdate
 from ..controller_schemas.project_responses import ProjectRead
 from todo.services.project_service import ProjectService
 from todo.services.app_factory import build_services
-
 
 router = APIRouter(
     prefix="/projects",
@@ -28,7 +26,8 @@ def get_project_service() -> ProjectService:
 def list_projects():
     ps = get_project_service()
     projects = ps.list_projects()
-    return projects
+    # ORM → Pydantic model
+    return [ProjectRead.model_validate(p) for p in projects]
 
 
 @router.post(
@@ -43,7 +42,7 @@ def create_project(payload: ProjectCreate):
             name=payload.name,
             description=payload.description,
         )
-        return project
+        return ProjectRead.model_validate(project)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -63,7 +62,7 @@ def get_project(project_id: int):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Project not found",
         )
-    return project
+    return ProjectRead.model_validate(project)
 
 
 @router.patch(
@@ -72,11 +71,11 @@ def get_project(project_id: int):
 )
 def update_project(project_id: int, payload: ProjectUpdate):
     ps = get_project_service()
-    update_data = payload.dict(exclude_unset=True)
+    update_data = payload.model_dump(exclude_unset=True)
 
     try:
         project = ps.update_project(project_id, **update_data)
-        return project
+        return ProjectRead.model_validate(project)
     except LookupError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

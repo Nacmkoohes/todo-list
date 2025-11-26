@@ -3,12 +3,10 @@ from __future__ import annotations
 from typing import List
 
 from fastapi import APIRouter, HTTPException, status
-
 from ..controller_schemas.task_requests import TaskCreate, TaskUpdate
 from ..controller_schemas.task_responses import TaskRead
 from todo.services.task_service import TaskService
 from todo.services.app_factory import build_services
-
 
 router = APIRouter(
     prefix="/projects/{project_id}/tasks",
@@ -29,7 +27,7 @@ def list_tasks(project_id: int):
     ts = get_task_service()
     try:
         tasks = ts.list_tasks(project_id)
-        return tasks
+        return [TaskRead.model_validate(t) for t in tasks]
     except LookupError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -51,7 +49,7 @@ def create_task(project_id: int, payload: TaskCreate):
             description=payload.description,
             deadline=payload.deadline,
         )
-        return task
+        return TaskRead.model_validate(task)
     except LookupError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -76,7 +74,7 @@ def get_task(project_id: int, task_id: int):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Task not found",
         )
-    return task
+    return TaskRead.model_validate(task)
 
 
 @router.patch(
@@ -85,7 +83,7 @@ def get_task(project_id: int, task_id: int):
 )
 def update_task(project_id: int, task_id: int, payload: TaskUpdate):
     ts = get_task_service()
-    update_data = payload.dict(exclude_unset=True)
+    update_data = payload.model_dump(exclude_unset=True)
 
     try:
         task = ts.update_task(
@@ -93,7 +91,7 @@ def update_task(project_id: int, task_id: int, payload: TaskUpdate):
             task_id=task_id,
             **update_data,
         )
-        return task
+        return TaskRead.model_validate(task)
     except LookupError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
