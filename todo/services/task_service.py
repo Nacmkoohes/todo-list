@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 from typing import Iterable, Optional
 from datetime import datetime, timezone
 
@@ -21,10 +20,12 @@ class TaskService:
         self.task_repo = task_repo
 
     def _ensure_project_exists(self, project_id: int) -> None:
+        """Ensures that the project exists in the repository."""
         if self.project_repo.get_by_id(project_id) is None:
             raise LookupError(f"Project #{project_id} not found")
 
     def list_tasks(self, project_id: int) -> Iterable[Task]:
+        """Returns a list of tasks for a given project."""
         self._ensure_project_exists(project_id)
         return self.task_repo.list_by_project(project_id)
 
@@ -35,6 +36,7 @@ class TaskService:
         description: Optional[str] = None,
         deadline: Optional[datetime] = None,
     ) -> Task:
+        """Creates a task for the given project."""
         self._ensure_project_exists(project_id)
 
         existing_tasks = list(self.task_repo.list_by_project(project_id))
@@ -50,15 +52,14 @@ class TaskService:
         return task
 
     def get_task(self, project_id: int, task_id: int) -> Optional[Task]:
+        """Retrieves a task by its ID and ensures it's from the correct project."""
         task = self.task_repo.get_by_id(task_id)
-        if task is None:
-            return None
-        if task.project_id != project_id:
-            # Do not leak that task exists in a different project
+        if task is None or task.project_id != project_id:
             return None
         return task
 
     def update_task(self, project_id: int, task_id: int, **fields) -> Task:
+        """Updates a task's attributes."""
         task = self.get_task(project_id, task_id)
         if task is None:
             raise LookupError(f"Task #{task_id} not found in project #{project_id}")
@@ -68,39 +69,55 @@ class TaskService:
             raise ValueError(f"Invalid status: {status!r}")
 
         # Auto-manage closed_at when status changes
-        if status is not None:
-            now = datetime.now(timezone.utc)
-            if status == "done":
-                fields.setdefault("closed_at", now)
-            else:
-                # If moved away from done, clear closed_at
-                fields.setdefault("closed_at", None)
+        if status == "done" and "closed_at" not in fields:
+            fields["closed_at"] = datetime.now(timezone.utc)
 
-        updated = self.task_repo.update(task_id, **fields)
-        return updated
+        updated_task = self.task_repo.update(task_id, **fields)
+        return updated_task
 
     def delete_task(self, project_id: int, task_id: int) -> None:
-        # Optional: ensure task belongs to project
+        """Deletes a task from the project."""
         task = self.get_task(project_id, task_id)
         if task is None:
-            # idempotent delete: silently ignore
-            return
+            return  # Task does not exist, no need to delete
         self.task_repo.delete(task_id)
 
     def list_overdue_open(self) -> Iterable[Task]:
-        """Return all overdue and still open tasks."""
+        """Returns all overdue and still open tasks."""
         return self.task_repo.list_overdue_open()
 
     def autoclose_overdue_tasks(self) -> int:
-        """Example method: automatically close overdue tasks."""
+        """Automatically closes overdue tasks."""
         overdue = list(self.task_repo.list_overdue_open())
         count = 0
         now = datetime.now(timezone.utc)
         for t in overdue:
-            self.task_repo.update(
-                t.id,
+            # Ensure status is set to "done" and closed_at is set
+            self.update_task(
+                project_id=t.project_id,
+                task_id=t.id,
                 status="done",
                 closed_at=now,
             )
             count += 1
         return count
+
+    def update_task_status(self, task_id: int, status: str, closed_at: Optional[datetime] = None) -> Task:
+        """Updates the status of a task."""
+        task = self.task_repo.get_by_id(task_id)
+        if task is None:
+            raise LookupError(f"Task #{task_id} not found")
+
+        if status not in ALLOWED_STATUSES:
+            raise ValueError(f"Invalid status: {status!r}")
+
+        # Auto-manage closed_at when status changes
+        if status == "done" and closed_at is None:
+            closed_at = datetime.now(timezone.utc)
+
+        updated_task = self.task_repo.update(
+            task_id=task.id,
+            status=status,
+            closed_at=closed_at
+        )
+        return updated_task

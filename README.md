@@ -1,60 +1,91 @@
-# ToDo List — Phase 1 (Python, Layered, In-Memory)
+# Todo List – Phase 3 (Web API with FastAPI)
 
-A clean, **layered** CLI ToDo app written in Python.  
-Phase 1 focuses on **business logic separation** from I/O and storage, **in-memory repositories**, and a simple **interactive CLI** that covers **9 user stories** end-to-end.
-
----
-
-## Highlights
-
-- **Layered architecture**: Presentation (CLI) ⇢ Services (business rules) ⇢ Repositories/Stores (data)
-- **9 complete user stories**:
-  1) Create Project  
-  2) List Projects  
-  3) Edit Project  
-  4) Delete Project  
-  5) Add Task  
-  6) List Tasks (per project)  
-  7) Change Task Status (strictly validated)  
-  8) Edit Task  
-  9) Delete Task
-- **Config via `.env`** (no hard-coding)
-- **Sequential numeric IDs** (projects start at 1; tasks start at 1 per project)
-- **English, menu-driven CLI** with tidy ASCII tables
-- **Easy to swap storage later** (JSON/DB in Phase 2) thanks to repository interfaces
+This project is a multi-phase Todo List application.  
+Phase 1 and 2 implemented the core domain model and persistence layer (in-memory, then PostgreSQL with SQLAlchemy).  
+**Phase 3** adds a full Web API on top of the existing services using **FastAPI**.
 
 ---
 
+## Features (Phase 3)
 
-
-**Separation of concerns**:
-- `services/` contain **only** business rules (limits, validation, status changes, etc.).
-- `in_memory_store.py` contains **only** CRUD/storage details.
-- `cli.py` handles **only** user interaction (input/print) and calls services.
-- `config.py` centralizes environment-based configuration.
+- RESTful HTTP API for managing:
+  - **Projects**
+  - **Tasks** belonging to projects
+- Layered architecture:
+  - API (controllers + request/response schemas)
+  - Services (business logic)
+  - Repositories (data access)
+  - Models (SQLAlchemy ORM)
+- PostgreSQL + SQLAlchemy integration (from Phase 2)
+- Pydantic v2 models for request/response validation
+- Automatic OpenAPI documentation via FastAPI (`/docs`)
 
 ---
 
-## ⚙️ Requirements
+## Tech Stack
 
-- Python **3.10+**
-- (Optional) `python-dotenv` if you use a `.env` file
+- Python 3.10
+- FastAPI
+- Uvicorn
+- SQLAlchemy
+- Psycopg2
+- Pydantic v2
+- PostgreSQL
+- Alembic (migrations)
+- Poetry (dependency management)
 
-Install:
-'''bash
-python -m venv .venv
-source .venv/bin/activate       # Windows: .venv\Scripts\activate
-pip install -r requirements.txt # if provided (or: pip install python-dotenv)
+---
 
-## 🔧Configuration
-Create a .env (or edit .env.example and copy it):
-MAX_NUMBER_OF_PROJECTS=5
-MAX_NUMBER_OF_TASKS=20
-ALLOWED_STATUSES=todo,doing,done
-Do not commit your real .env (it’s ignored by .gitignore).
-The app reads these values at runtime. Defaults apply if not provided.
+## Project Structure
 
-## ▶️ Run (Interactive CLI)
-From the repository root:
-python main.py
+```text
+todo/                                 # Application Package
 
+├── api                               # API Layer
+│   ├── controllers                   # FastAPI controllers (HTTP endpoints)
+│   │   ├── project_controller.py
+│   │   ├── task_controller.py
+│   │   └── __init__.py
+│   │
+│   ├── controller_schemas            # Pydantic models for input/output
+│   │   ├── project_requests.py
+│   │   ├── project_responses.py
+│   │   ├── task_requests.py
+│   │   ├── task_responses.py
+│   │   └── __init__.py
+│   │
+│   ├── routers.py                    # Aggregates routers, prefix /api/v1
+│   └── __init__.py
+│
+├── services                          # Business Logic Layer
+│   ├── app_factory.py                # Creates service instances
+│   ├── project_service.py            # Use-cases for projects
+│   ├── task_service.py               # Use-cases for tasks
+│   └── __init__.py
+│
+├── repositories                      # Data Access Layer
+│   ├── project_repository.py         # ProjectRepository + SQLAlchemy impl
+│   ├── task_repository.py            # TaskRepository + SQLAlchemy impl
+│   └── __init__.py
+│
+├── models                            # ORM Models (SQLAlchemy)
+│   ├── project.py                    # Project ORM model
+│   ├── task.py                       # Task ORM model
+│   └── __init__.py
+│
+├── db                                # Database setup & session
+│   ├── base.py                       # Declarative Base
+│   ├── session.py                    # Engine + SessionLocal
+│   └── __init__.py
+│
+├── commands                          # CLI tools / background jobs
+│   ├── autoclose_overdue.py          # Auto-close overdue tasks
+│   └── scheduler.py                  # Optional scheduling utility
+│
+├── exceptions                        # Domain-specific exceptions
+│   ├── service_exceptions.py
+│   └── __init__.py
+│
+├── cli.py                            # CLI entrypoint from previous phases
+├── config.py                         # Application configuration (limits, statuses)
+└── __init__.py                       # Package marker
