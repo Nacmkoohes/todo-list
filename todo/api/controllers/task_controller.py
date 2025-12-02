@@ -8,10 +8,8 @@ from ..controller_schemas.task_responses import TaskRead
 from todo.services.task_service import TaskService
 from todo.services.app_factory import build_services
 
-router = APIRouter(
-    prefix="/projects/{project_id}/tasks",
-    tags=["tasks"],
-)
+# ❗ بدون prefix و بدون tags
+router = APIRouter()
 
 
 def get_task_service() -> TaskService:
@@ -111,4 +109,4 @@ def update_task(project_id: int, task_id: int, payload: TaskUpdate):
 def delete_task(project_id: int, task_id: int):
     ts = get_task_service()
     ts.delete_task(project_id, task_id)
-    return
+    return None

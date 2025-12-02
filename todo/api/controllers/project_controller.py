@@ -8,10 +8,8 @@ from ..controller_schemas.project_responses import ProjectRead
 from todo.services.project_service import ProjectService
 from todo.services.app_factory import build_services
 
-router = APIRouter(
-    prefix="/projects",
-    tags=["projects"],
-)
+# ❗ بدون prefix و بدون tags
+router = APIRouter()
 
 
 def get_project_service() -> ProjectService:
@@ -26,7 +24,6 @@ def get_project_service() -> ProjectService:
 def list_projects():
     ps = get_project_service()
     projects = ps.list_projects()
-    # ORM → Pydantic model
     return [ProjectRead.model_validate(p) for p in projects]
 
 
@@ -95,4 +92,5 @@ def update_project(project_id: int, payload: ProjectUpdate):
 def delete_project(project_id: int):
     ps = get_project_service()
     ps.delete_project(project_id)
-    return
+    # 204 → نیازی به بدنه‌ی پاسخ نیست
+    return None
