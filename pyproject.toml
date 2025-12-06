@@ -3,20 +3,24 @@ name = "todo-list"
 version = "0.1.0"
 description = ""
 authors = [
-    {name = "Nasim Koohestani",email = "nasimkoohestani82@gamil.com"}
+    {name = "Nasim Koohestani", email = "nasimkoohestani82@gamil.com"}
 ]
 readme = "README.md"
 requires-python = ">=3.10"
+
 dependencies = [
     "python-dotenv (>=1.1.1,<2.0.0)",
     "sqlalchemy (>=2.0,<3.0)",
     "psycopg2-binary (>=2.9.11,<3.0.0)",
     "alembic (>=1.17.1,<2.0.0)",
-    "schedule (>=1.2.2,<2.0.0)"
+    "schedule (>=1.2.2,<2.0.0)",
+    "fastapi (>=0.122.0,<0.123.0)",
+    "uvicorn[standard] (>=0.38.0,<0.39.0)"
 ]
 
 [tool.poetry]
-packages = [{include = "todo_list", from = "src"}]
+# پکیج اصلی پروژه همون پوشه‌ی "todo" در ریشه ریپو است
+packages = [{ include = "todo" }]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

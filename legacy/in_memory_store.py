@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Dict, Iterable
-from .repositories import Project, Task
+from todo.repositories import Project, Task
 
 class InMemoryProjectRepo:
     def __init__(self) -> None:
