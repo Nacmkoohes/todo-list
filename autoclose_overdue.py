@@ -9,10 +9,7 @@ def run(dry_run: bool = False) -> int:
     """
     Find all overdue, non-done tasks and close them.
 
-    dry_run=True  → فقط چاپ می‌کند، تغییری در DB نمی‌دهد.
-    dry_run=False → واقعاً در DB status و closed_at را آپدیت می‌کند.
     """
-    # سرویس‌ها و ریپو را بسازیم
     ps, ts = build_services()
     task_repo = SqlAlchemyTaskRepository(SessionLocal)
 

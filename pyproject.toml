@@ -19,7 +19,6 @@ dependencies = [
 ]
 
 [tool.poetry]
-# پکیج اصلی پروژه همون پوشه‌ی "todo" در ریشه ریپو است
 packages = [{ include = "todo" }]
 
 [build-system]

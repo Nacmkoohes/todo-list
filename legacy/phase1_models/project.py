@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from typing import Optional, List, Any
-from models.task import Task  # برای type و serialization
+from models.task import Task
 
 class Project:
     def __init__(self, name: str, description: str, project_id: int, created_at: Optional[datetime] = None, tasks: Optional[List[Any]] = None):
@@ -11,14 +11,12 @@ class Project:
             self.created_at = datetime.fromisoformat(created_at)
         else:
             self.created_at = created_at or datetime.now(timezone.utc)
-        # ممکنه لیستِ dict یا Task بیاد؛ همونجا normalize نکنیم، در Service انجام می‌دیم.
         self.tasks: List[Any] = tasks or []
 
     def list_tasks(self):
         return self.tasks
 
     def add_task(self, task: Task):
-        # اعتبارسنجی وضعیت و بقیه قوانین قبلاً داری
         self.tasks.append(task)
         return f"Task '{task.title}' added successfully to project '{self.name}'"
 
@@ -35,6 +33,6 @@ class Project:
             "name": self.name,
             "description": self.description,
             "created_at": self.created_at.isoformat(),
-            # 👇 تبدیل هر Task به dict
+            #turn task to dictionary so you can search on it
             "tasks": [t.to_dict() if hasattr(t, "to_dict") else t for t in self.tasks],
         }
